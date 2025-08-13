@@ -1,5 +1,6 @@
 import type React from "react"
 import { Navigation } from "@/components/navigation"
+import { PriceTicker } from "@/components/price-ticker"
 
 export default function SiteLayout({
   children,
@@ -9,6 +10,7 @@ export default function SiteLayout({
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      <PriceTicker />
       <main className="container mx-auto px-4 py-6 max-w-7xl">{children}</main>
     </div>
   )

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react"
 import { DataTable, type Row } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
+import { CountryFlag } from "@/components/country-flag"
+import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 import { Clock, Globe, TrendingUp } from "lucide-react"
@@ -95,18 +97,24 @@ export default function EconomicPage() {
           <span>{getTranslation(locale, "country")}</span>
         </div>
       ),
-      cell: ({ row }: { row: any }) => (
-        <div className="flex items-center space-x-2">
-          <span className="font-medium">{row.getValue("country") || "N/A"}</span>
-        </div>
-      ),
+      cell: ({ row }: { row: any }) => {
+        const country = row.getValue("country") || "N/A"
+        return (
+          <div className="flex items-center space-x-2">
+            <CountryFlag countryCode={country} countryName={country} size="sm" />
+            <span className="font-medium">{country}</span>
+          </div>
+        )
+      },
     },
     {
       accessorKey: "event",
       header: getTranslation(locale, "event"),
       cell: ({ row }: { row: any }) => (
         <div className="max-w-[300px]">
-          <div className="font-medium line-clamp-2">{row.getValue("event") || "N/A"}</div>
+          <div className="font-medium line-clamp-2 break-words overflow-hidden text-ellipsis">
+            {row.getValue("event") || "N/A"}
+          </div>
         </div>
       ),
     },
@@ -151,6 +159,17 @@ export default function EconomicPage() {
         </div>
       ),
       cell: ({ row }: { row: any }) => getImpactBadge(row.getValue("impact")),
+    },
+    {
+      id: "actions",
+      header: "Alert",
+      cell: ({ row }: { row: any }) => (
+        <AlertButton
+          eventTitle={row.getValue("event") || "Economic Event"}
+          eventTime={row.getValue("time")}
+          type="economic"
+        />
+      ),
     },
   ]
 

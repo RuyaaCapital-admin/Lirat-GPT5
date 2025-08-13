@@ -36,6 +36,13 @@ const SYMBOLS = [
   { value: "NVDA.US", label: "NVIDIA" },
   { value: "META.US", label: "Meta" },
   { value: "NFLX.US", label: "Netflix" },
+  { value: "BTCUSD", label: "Bitcoin" },
+  { value: "ETHUSD", label: "Ethereum" },
+  { value: "XAUUSD", label: "Gold" },
+  { value: "XAGUSD", label: "Silver" },
+  { value: "EURUSD", label: "EUR/USD" },
+  { value: "GBPUSD", label: "GBP/USD" },
+  { value: "USDJPY", label: "USD/JPY" },
 ]
 
 const TIMEFRAMES = [
@@ -302,7 +309,7 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
                 ))}
               </SelectContent>
             </Select>
-            <Select value={timeframe} onValueframeChange={onTimeframeChange}>
+            <Select value={timeframe} onValueChange={onTimeframeChange}>
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -330,7 +337,7 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
               </Badge>
               <span>Use ChartAPI.addLevel(price) to add levels</span>
             </div>
-            <div>Powered by EODHD</div>
+            <div>Powered by LIIRAT</div>
           </div>
         </div>
       </ModernPanelContent>

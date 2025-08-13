@@ -49,14 +49,14 @@ export function QuickActions({ onActionClick }: QuickActionsProps) {
               <Button
                 key={index}
                 variant="outline"
-                className="h-auto p-3 text-left justify-start bg-transparent"
+                className="h-auto p-3 text-left justify-start bg-transparent hover:bg-muted/50 transition-colors"
                 onClick={() => onActionClick(action.message)}
               >
-                <div className="flex items-start space-x-3">
-                  <Icon className="h-5 w-5 mt-0.5 text-primary" />
-                  <div className="space-y-1">
-                    <div className="font-medium text-sm">{action.title}</div>
-                    <div className="text-xs text-muted-foreground">{action.description}</div>
+                <div className="flex items-start space-x-3 w-full">
+                  <Icon className="h-5 w-5 mt-0.5 text-primary flex-shrink-0" />
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">{action.title}</div>
+                    <div className="text-xs text-muted-foreground line-clamp-2 break-words">{action.description}</div>
                   </div>
                 </div>
               </Button>

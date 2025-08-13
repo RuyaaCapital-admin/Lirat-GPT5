@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -26,20 +26,32 @@ interface ChartAction {
   description: string
 }
 
-export function ChatInterface() {
+interface ChatInterfaceRef {
+  sendMessage: (message: string) => void
+}
+
+export const ChatInterface = forwardRef<ChatInterfaceRef>((props, ref) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Hello! I'm your AI trading assistant. I can help you analyze markets, control charts, and provide trading insights. Try asking me about market trends, price levels, or technical analysis.",
+        "Hello! I'm your LIIRAT AI trading assistant. I can help you analyze markets, control charts, and provide trading insights. Try asking me about market trends, price levels, or technical analysis.",
       timestamp: new Date(),
     },
   ])
   const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const { locale } = useLocale()
+
+  // Expose sendMessage method to parent component
+  useImperativeHandle(ref, () => ({
+    sendMessage: (message: string) => {
+      setInput(message)
+      handleSend(message)
+    },
+  }))
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -82,17 +94,19 @@ export function ChatInterface() {
     // Chart control responses
     if (lowerMessage.includes("add level") || lowerMessage.includes("support") || lowerMessage.includes("resistance")) {
       const priceMatch = userMessage.match(/(\d+\.?\d*)/g)
-      const price = priceMatch ? Number.parseFloat(priceMatch[0]) : 2050
+      const price = priceMatch ? Number.parseFloat(priceMatch[0]) : 0
 
-      return {
-        content: `I've added a price level at ${price}. This level could act as potential support or resistance based on historical price action. Monitor how price reacts when it approaches this level.`,
-        actions: [
-          {
-            type: "addLevel",
-            params: { price, title: `Level ${price}` },
-            description: `Added price level at ${price}`,
-          },
-        ],
+      if (price > 0) {
+        return {
+          content: `I've added a price level at ${price}. This level could act as potential support or resistance based on historical price action. Monitor how price reacts when it approaches this level.`,
+          actions: [
+            {
+              type: "addLevel",
+              params: { price, title: `Level ${price}` },
+              description: `Added price level at ${price}`,
+            },
+          ],
+        }
       }
     }
 
@@ -174,19 +188,20 @@ export function ChatInterface() {
     }
   }
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return
+  const handleSend = async (messageText?: string) => {
+    const messageToSend = messageText || input.trim()
+    if (!messageToSend || isLoading) return
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: messageToSend,
       timestamp: new Date(),
     }
 
     setMessages((prev) => [...prev, userMessage])
     setInput("")
-    setIsLoading(true)
+    setLoading(true)
 
     try {
       const response = await generateAIResponse(userMessage.content)
@@ -215,7 +230,7 @@ export function ChatInterface() {
       }
       setMessages((prev) => [...prev, errorMessage])
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
@@ -231,7 +246,7 @@ export function ChatInterface() {
       <ModernPanelHeader>
         <ModernPanelTitle className="flex items-center space-x-2">
           <Bot className="h-5 w-5" />
-          <span>{getTranslation(locale, "ai")}</span>
+          <span>LIIRAT {getTranslation(locale, "ai")}</span>
         </ModernPanelTitle>
       </ModernPanelHeader>
       <ModernPanelContent className="flex-1 flex flex-col p-0">
@@ -249,9 +264,9 @@ export function ChatInterface() {
                 >
                   {message.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
-                <div className={`flex-1 space-y-2 ${message.role === "user" ? "text-right" : ""}`}>
+                <div className={`flex-1 space-y-2 min-w-0 ${message.role === "user" ? "text-right" : ""}`}>
                   <div
-                    className={`rounded-lg px-3 py-2 text-sm ${
+                    className={`rounded-lg px-3 py-2 text-sm break-words ${
                       message.role === "user"
                         ? "bg-primary text-primary-foreground ml-12"
                         : "bg-muted text-muted-foreground mr-12"
@@ -262,7 +277,7 @@ export function ChatInterface() {
                   {message.actions && message.actions.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {message.actions.map((action, index) => (
-                        <Badge key={index} variant="secondary" className="text-xs">
+                        <Badge key={index} variant="secondary" className="text-xs truncate max-w-[200px]">
                           {action.description}
                         </Badge>
                       ))}
@@ -308,7 +323,7 @@ export function ChatInterface() {
               disabled={isLoading}
               className="flex-1"
             />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()} size="sm">
+            <Button onClick={() => handleSend()} disabled={isLoading || !input.trim()} size="sm">
               <Send className="h-4 w-4" />
             </Button>
           </div>
@@ -316,4 +331,6 @@ export function ChatInterface() {
       </ModernPanelContent>
     </ModernPanel>
   )
-}
+})
+
+ChatInterface.displayName = "ChatInterface"

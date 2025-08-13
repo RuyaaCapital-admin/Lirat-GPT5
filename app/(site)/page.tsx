@@ -11,7 +11,7 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
           LIIRAT Dashboard
         </h1>
-        <p className="text-muted-foreground">Real-time financial markets data and insights powered by EODHD</p>
+        <p className="text-muted-foreground">Real-time financial markets data and insights from LIIRAT News</p>
       </div>
 
       {/* Quick Stats */}
@@ -22,8 +22,8 @@ export default function Dashboard() {
             <Activity className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">6</div>
-            <p className="text-xs text-muted-foreground">Major currency pairs</p>
+            <div className="text-2xl font-bold">15</div>
+            <p className="text-xs text-muted-foreground">Global instruments</p>
           </CardContent>
         </Card>
 
@@ -33,19 +33,19 @@ export default function Dashboard() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">Open</div>
-            <p className="text-xs text-muted-foreground">Trading session active</p>
+            <div className="text-2xl font-bold text-green-600">Live</div>
+            <p className="text-xs text-muted-foreground">Real-time data</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Sources</CardTitle>
+            <CardTitle className="text-sm font-medium">News Source</CardTitle>
             <DollarSign className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">EODHD</div>
-            <p className="text-xs text-muted-foreground">Real-time financial data</p>
+            <div className="text-2xl font-bold">LIIRAT</div>
+            <p className="text-xs text-muted-foreground">Financial intelligence</p>
           </CardContent>
         </Card>
 
@@ -55,8 +55,8 @@ export default function Dashboard() {
             <Bell className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
-            <p className="text-xs text-muted-foreground">Active price alerts</p>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground">Set your first alert</p>
           </CardContent>
         </Card>
       </div>
@@ -71,7 +71,7 @@ export default function Dashboard() {
         {/* News Preview */}
         <div className="space-y-6">
           <NewsPreviewCard type="economic" title="Economic Events" href="/economic" />
-          <NewsPreviewCard type="financial" title="Financial News" href="/financial" />
+          <NewsPreviewCard type="financial" title="LIIRAT News" href="/financial" />
         </div>
       </div>
     </div>

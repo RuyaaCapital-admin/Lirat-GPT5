@@ -23,7 +23,7 @@ export function MarketStats({ currentSymbol }: MarketStatsProps) {
     const fetchStats = async () => {
       setLoading(true)
       try {
-        const symbols = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY"]
+        const symbols = ["XAUUSD", "EURUSD", "BTCUSD", "AAPL.US", "GBPUSD", "ETHUSD"]
         const promises = symbols.map(async (symbol) => {
           const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
           if (response.ok) {

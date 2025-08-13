@@ -1,15 +1,18 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ModernPanel, ModernPanelContent, ModernPanelHeader, ModernPanelTitle } from "@/components/modern-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bell, Plus, Trash2, TrendingUp, TrendingDown } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Bell, Plus, Trash2, TrendingUp, TrendingDown, Edit, RefreshCw } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
+import { toast } from "sonner"
 
 interface Alert {
   id: string
@@ -21,36 +24,35 @@ interface Alert {
   createdAt: Date
 }
 
+interface MarketPrice {
+  symbol: string
+  price: number
+  change: number
+  changePercent: number
+}
+
+const ALERT_SYMBOLS = [
+  { value: "XAUUSD", label: "Gold/USD" },
+  { value: "XAGUSD", label: "Silver/USD" },
+  { value: "EURUSD", label: "EUR/USD" },
+  { value: "GBPUSD", label: "GBP/USD" },
+  { value: "USDJPY", label: "USD/JPY" },
+  { value: "USDCHF", label: "USD/CHF" },
+  { value: "AUDUSD", label: "AUD/USD" },
+  { value: "AAPL.US", label: "Apple Inc" },
+  { value: "GOOGL.US", label: "Alphabet Inc" },
+  { value: "MSFT.US", label: "Microsoft" },
+  { value: "TSLA.US", label: "Tesla Inc" },
+  { value: "BTCUSD", label: "Bitcoin" },
+  { value: "ETHUSD", label: "Ethereum" },
+]
+
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>([
-    {
-      id: "1",
-      symbol: "XAUUSD",
-      type: "price",
-      condition: "above",
-      value: 2050,
-      status: "active",
-      createdAt: new Date(Date.now() - 86400000),
-    },
-    {
-      id: "2",
-      symbol: "EURUSD",
-      type: "price",
-      condition: "below",
-      value: 1.08,
-      status: "triggered",
-      createdAt: new Date(Date.now() - 172800000),
-    },
-    {
-      id: "3",
-      symbol: "GBPUSD",
-      type: "price",
-      condition: "above",
-      value: 1.27,
-      status: "active",
-      createdAt: new Date(Date.now() - 259200000),
-    },
-  ])
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [currentPrices, setCurrentPrices] = useState<Record<string, MarketPrice>>({})
+  const [loadingPrices, setLoadingPrices] = useState(false)
+  const [editingAlert, setEditingAlert] = useState<Alert | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   const [newAlert, setNewAlert] = useState({
     symbol: "XAUUSD",
@@ -60,7 +62,53 @@ export default function AlertsPage() {
 
   const { locale } = useLocale()
 
-  const handleCreateAlert = () => {
+  const fetchCurrentPrice = async (symbol: string): Promise<MarketPrice | null> => {
+    try {
+      const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
+      if (response.ok) {
+        const data = await response.json()
+        return {
+          symbol,
+          price: data.price || 0,
+          change: data.change || 0,
+          changePercent: data.changePercent || 0,
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to fetch price for ${symbol}:`, error)
+    }
+    return null
+  }
+
+  const fetchAllPrices = async () => {
+    setLoadingPrices(true)
+    try {
+      const symbols = ALERT_SYMBOLS.map((s) => s.value)
+      const promises = symbols.map((symbol) => fetchCurrentPrice(symbol))
+      const results = await Promise.all(promises)
+
+      const pricesMap: Record<string, MarketPrice> = {}
+      results.forEach((result) => {
+        if (result) {
+          pricesMap[result.symbol] = result
+        }
+      })
+
+      setCurrentPrices(pricesMap)
+    } catch (error) {
+      console.error("Failed to fetch prices:", error)
+    } finally {
+      setLoadingPrices(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAllPrices()
+    const interval = setInterval(fetchAllPrices, 30000) // Update every 30 seconds
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleCreateAlert = async () => {
     if (!newAlert.value) return
 
     const alert: Alert = {
@@ -75,10 +123,26 @@ export default function AlertsPage() {
 
     setAlerts((prev) => [alert, ...prev])
     setNewAlert({ symbol: "XAUUSD", condition: "above", value: "" })
+    toast.success("Price alert created successfully!")
+  }
+
+  const handleEditAlert = (alert: Alert) => {
+    setEditingAlert(alert)
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateAlert = () => {
+    if (!editingAlert) return
+
+    setAlerts((prev) => prev.map((alert) => (alert.id === editingAlert.id ? editingAlert : alert)))
+    setEditDialogOpen(false)
+    setEditingAlert(null)
+    toast.success("Alert updated successfully!")
   }
 
   const handleDeleteAlert = (id: string) => {
     setAlerts((prev) => prev.filter((alert) => alert.id !== id))
+    toast.success("Alert deleted successfully!")
   }
 
   const getStatusBadge = (status: Alert["status"]) => {
@@ -92,6 +156,17 @@ export default function AlertsPage() {
       default:
         return <Badge variant="outline">{status}</Badge>
     }
+  }
+
+  const formatPrice = (price: number, symbol: string) => {
+    if (symbol.includes("JPY")) return price.toFixed(2)
+    if (symbol.includes("USD") && !symbol.includes(".US")) return price.toFixed(4)
+    return price.toFixed(2)
+  }
+
+  const getCurrentPrice = (symbol: string) => {
+    const price = currentPrices[symbol]
+    return price ? formatPrice(price.price, symbol) : "Loading..."
   }
 
   const activeAlerts = alerts.filter((alert) => alert.status === "active").length
@@ -148,10 +223,21 @@ export default function AlertsPage() {
         <div className="lg:col-span-1">
           <ModernPanel>
             <ModernPanelHeader>
-              <ModernPanelTitle className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>Create Alert</span>
-              </ModernPanelTitle>
+              <div className="flex items-center justify-between">
+                <ModernPanelTitle className="flex items-center space-x-2">
+                  <Plus className="h-4 w-4" />
+                  <span>Create Alert</span>
+                </ModernPanelTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={fetchAllPrices}
+                  disabled={loadingPrices}
+                  className="h-8 w-8 p-0"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingPrices ? "animate-spin" : ""}`} />
+                </Button>
+              </div>
             </ModernPanelHeader>
             <ModernPanelContent>
               <div className="space-y-4">
@@ -165,14 +251,39 @@ export default function AlertsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="XAUUSD">Gold/USD</SelectItem>
-                      <SelectItem value="EURUSD">EUR/USD</SelectItem>
-                      <SelectItem value="GBPUSD">GBP/USD</SelectItem>
-                      <SelectItem value="USDJPY">USD/JPY</SelectItem>
-                      <SelectItem value="USDCHF">USD/CHF</SelectItem>
-                      <SelectItem value="AUDUSD">AUD/USD</SelectItem>
+                      {ALERT_SYMBOLS.map((symbol) => (
+                        <SelectItem key={symbol.value} value={symbol.value}>
+                          {symbol.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Current Price:</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-mono text-sm font-semibold">{getCurrentPrice(newAlert.symbol)}</span>
+                      {currentPrices[newAlert.symbol] && (
+                        <div
+                          className={`flex items-center space-x-1 text-xs ${
+                            currentPrices[newAlert.symbol].changePercent >= 0 ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {currentPrices[newAlert.symbol].changePercent >= 0 ? (
+                            <TrendingUp className="h-3 w-3" />
+                          ) : (
+                            <TrendingDown className="h-3 w-3" />
+                          )}
+                          <span>
+                            {currentPrices[newAlert.symbol].changePercent >= 0 ? "+" : ""}
+                            {currentPrices[newAlert.symbol].changePercent.toFixed(2)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -241,12 +352,25 @@ export default function AlertsPage() {
                           <span className="font-mono font-medium">{alert.symbol}</span>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {alert.condition} {alert.value.toFixed(alert.symbol.includes("JPY") ? 2 : 4)}
+                          {alert.condition} {formatPrice(alert.value, alert.symbol)}
                         </div>
                         {getStatusBadge(alert.status)}
+                        {currentPrices[alert.symbol] && (
+                          <div className="text-xs text-muted-foreground">
+                            Current: {formatPrice(currentPrices[alert.symbol].price, alert.symbol)}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs text-muted-foreground">{alert.createdAt.toLocaleDateString()}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditAlert(alert)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -264,6 +388,97 @@ export default function AlertsPage() {
           </ModernPanel>
         </div>
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <Edit className="h-5 w-5" />
+              <span>Edit Alert</span>
+            </DialogTitle>
+          </DialogHeader>
+          {editingAlert && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-symbol">Symbol</Label>
+                <Select
+                  value={editingAlert.symbol}
+                  onValueChange={(value) => setEditingAlert({ ...editingAlert, symbol: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALERT_SYMBOLS.map((symbol) => (
+                      <SelectItem key={symbol.value} value={symbol.value}>
+                        {symbol.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="p-3 rounded-lg bg-muted/50 border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Current Price:</span>
+                  <span className="font-mono text-sm font-semibold">{getCurrentPrice(editingAlert.symbol)}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-condition">Condition</Label>
+                <Select
+                  value={editingAlert.condition}
+                  onValueChange={(value) => setEditingAlert({ ...editingAlert, condition: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="above">Price Above</SelectItem>
+                    <SelectItem value="below">Price Below</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-value">Price Level</Label>
+                <Input
+                  id="edit-value"
+                  type="number"
+                  step="0.0001"
+                  value={editingAlert.value}
+                  onChange={(e) => setEditingAlert({ ...editingAlert, value: Number.parseFloat(e.target.value) || 0 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select
+                  value={editingAlert.status}
+                  onValueChange={(value: "active" | "triggered" | "expired") =>
+                    setEditingAlert({ ...editingAlert, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="triggered">Triggered</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button onClick={handleUpdateAlert} className="w-full">
+                <Edit className="h-4 w-4 mr-2" />
+                Update Alert
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

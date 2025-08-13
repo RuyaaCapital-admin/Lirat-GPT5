@@ -14,7 +14,20 @@ interface MarketData {
   changePercent: number
 }
 
-const majorSymbols = ["AAPL.US", "GOOGL.US", "MSFT.US", "TSLA.US", "AMZN.US", "NVDA.US"]
+const majorSymbols = [
+  "AAPL.US",
+  "GOOGL.US",
+  "MSFT.US",
+  "TSLA.US",
+  "BTCUSD",
+  "ETHUSD",
+  "XAUUSD",
+  "XAGUSD",
+  "EURUSD",
+  "GBPUSD",
+  "USDJPY",
+  "NVDA.US",
+]
 
 export function MarketOverviewCard() {
   const [marketData, setMarketData] = useState<MarketData[]>([])
@@ -65,7 +78,7 @@ export function MarketOverviewCard() {
         <div className="space-y-3">
           {loading && marketData.length === 0 ? (
             <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 animate-pulse">
                   <div className="h-4 bg-muted rounded w-16"></div>
                   <div className="flex space-x-3">

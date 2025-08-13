@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { DataTable, type Row } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
+import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 import { Clock, Building, Newspaper, TrendingUp } from "lucide-react"
@@ -31,11 +32,75 @@ export default function FinancialPage() {
     fetchData()
   }, [])
 
-  const getSentimentBadge = (sentiment: string) => {
-    const sentimentLower = sentiment?.toLowerCase()
-    switch (sentimentLower) {
+  const getSentimentBadge = (sentiment: any) => {
+    // Handle sentiment object with polarity, neg, neu, pos structure
+    if (sentiment && typeof sentiment === "object") {
+      // If it has polarity property, use that
+      if (sentiment.polarity !== undefined) {
+        const polarity = String(sentiment.polarity).toLowerCase()
+        if (polarity === "positive" || polarity === "1" || sentiment.polarity > 0) {
+          return (
+            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+              Positive
+            </Badge>
+          )
+        } else if (polarity === "negative" || polarity === "-1" || sentiment.polarity < 0) {
+          return (
+            <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
+              Negative
+            </Badge>
+          )
+        } else {
+          return (
+            <Badge variant="outline" className="text-xs">
+              Neutral
+            </Badge>
+          )
+        }
+      }
+
+      // If it has pos, neg, neu scores, determine sentiment based on highest score
+      if (sentiment.pos !== undefined && sentiment.neg !== undefined) {
+        const pos = Number.parseFloat(sentiment.pos) || 0
+        const neg = Number.parseFloat(sentiment.neg) || 0
+        const neu = Number.parseFloat(sentiment.neu) || 0
+
+        if (pos > neg && pos > neu) {
+          return (
+            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+              Positive ({(pos * 100).toFixed(0)}%)
+            </Badge>
+          )
+        } else if (neg > pos && neg > neu) {
+          return (
+            <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
+              Negative ({(neg * 100).toFixed(0)}%)
+            </Badge>
+          )
+        } else {
+          return (
+            <Badge variant="outline" className="text-xs">
+              Neutral ({(neu * 100).toFixed(0)}%)
+            </Badge>
+          )
+        }
+      }
+
+      // Fallback for unknown object structure
+      return (
+        <Badge variant="outline" className="text-xs">
+          N/A
+        </Badge>
+      )
+    }
+
+    // Handle string/number sentiment values
+    const sentimentStr = sentiment ? String(sentiment).toLowerCase() : ""
+
+    switch (sentimentStr) {
       case "positive":
       case "bullish":
+      case "1":
         return (
           <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
             Positive
@@ -43,12 +108,14 @@ export default function FinancialPage() {
         )
       case "negative":
       case "bearish":
+      case "-1":
         return (
           <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
             Negative
           </Badge>
         )
       case "neutral":
+      case "0":
         return (
           <Badge variant="outline" className="text-xs">
             Neutral
@@ -57,7 +124,7 @@ export default function FinancialPage() {
       default:
         return (
           <Badge variant="outline" className="text-xs">
-            {sentiment || "N/A"}
+            N/A
           </Badge>
         )
     }
@@ -109,7 +176,9 @@ export default function FinancialPage() {
       ),
       cell: ({ row }: { row: any }) => (
         <div className="max-w-[400px]">
-          <div className="font-medium line-clamp-3">{row.getValue("headline") || "N/A"}</div>
+          <div className="font-medium line-clamp-3 break-words overflow-hidden text-ellipsis">
+            {row.getValue("headline") || "N/A"}
+          </div>
         </div>
       ),
     },
@@ -137,6 +206,18 @@ export default function FinancialPage() {
       ),
       cell: ({ row }: { row: any }) => getSentimentBadge(row.getValue("sentiment")),
     },
+    {
+      id: "actions",
+      header: "Alert",
+      cell: ({ row }: { row: any }) => (
+        <AlertButton
+          eventTitle={row.getValue("headline") || "Financial News"}
+          eventTime={row.getValue("ts")}
+          symbol={row.getValue("symbol")}
+          type="financial"
+        />
+      ),
+    },
   ]
 
   return (
@@ -149,7 +230,7 @@ export default function FinancialPage() {
       <DataTable
         columns={columns}
         data={data}
-        title="Financial News Feed"
+        title="LIIRAT News Feed"
         searchPlaceholder="Search headlines, sources, symbols..."
         loading={loading}
         onRefresh={fetchData}
