@@ -14,7 +14,7 @@ interface MarketData {
   changePercent: number
 }
 
-const majorPairs = ["XAUUSD", "EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD"]
+const majorSymbols = ["AAPL.US", "GOOGL.US", "MSFT.US", "TSLA.US", "AMZN.US", "NVDA.US"]
 
 export function MarketOverviewCard() {
   const [marketData, setMarketData] = useState<MarketData[]>([])
@@ -25,7 +25,7 @@ export function MarketOverviewCard() {
   const fetchMarketData = async () => {
     setLoading(true)
     try {
-      const promises = majorPairs.map(async (symbol) => {
+      const promises = majorSymbols.map(async (symbol) => {
         const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
         if (response.ok) {
           return await response.json()
@@ -85,9 +85,7 @@ export function MarketOverviewCard() {
                   <div className="font-medium font-mono">{market.symbol}</div>
                 </div>
                 <div className="flex items-center space-x-3 text-right">
-                  <div className="font-mono text-sm">
-                    {market.price?.toFixed(market.symbol.includes("JPY") ? 2 : 4) || "N/A"}
-                  </div>
+                  <div className="font-mono text-sm">${market.price?.toFixed(2) || "N/A"}</div>
                   <div
                     className={`flex items-center space-x-1 text-sm font-medium ${
                       (market.changePercent || 0) >= 0 ? "text-green-600" : "text-red-600"

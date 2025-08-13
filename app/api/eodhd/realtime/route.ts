@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic"
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const symbol = (searchParams.get("symbol") || "XAUUSD").toUpperCase()
+  const symbol = searchParams.get("symbol") || "AAPL.US"
   const token = process.env.EODHD_API_TOKEN
 
   if (!token) {
@@ -10,7 +10,10 @@ export async function GET(req: Request) {
   }
 
   try {
-    const url = `${process.env.EODHD_BASE}/real-time/${symbol}?api_token=${token}&fmt=json`
+    // Using correct EODHD API endpoint with hardcoded base URL
+    const baseUrl = process.env.EODHD_BASE || "https://eodhd.com"
+    const url = `${baseUrl}/api/real-time/${symbol}?api_token=${token}&fmt=json`
+
     const response = await fetch(url, { cache: "no-store" })
 
     if (!response.ok) {
@@ -18,11 +21,13 @@ export async function GET(req: Request) {
     }
 
     const data = await response.json()
+
     return Response.json({
-      symbol,
-      price: +data.close,
-      change: +data.change,
-      changePercent: +data.change_p,
+      symbol: data.code || symbol,
+      price: Number.parseFloat(data.close || data.price || 0),
+      change: Number.parseFloat(data.change || 0),
+      changePercent: Number.parseFloat(data.change_p || 0),
+      volume: Number.parseFloat(data.volume || 0),
       ts: Math.floor(new Date(data.timestamp || Date.now()).getTime() / 1000),
     })
   } catch (error) {

@@ -43,6 +43,13 @@ export const translations = {
     lightMode: "Light Mode",
     darkMode: "Dark Mode",
     language: "Language",
+
+    // LIIRAT Specific
+    liiratNews: "LIIRAT News",
+    financialMarkets: "Financial Markets",
+    economicCalendar: "Economic Calendar",
+    marketAnalysis: "Market Analysis",
+    tradingSignals: "Trading Signals",
   },
   ar: {
     // Navigation
@@ -83,6 +90,13 @@ export const translations = {
     lightMode: "الوضع الفاتح",
     darkMode: "الوضع الداكن",
     language: "اللغة",
+
+    // LIIRAT Specific
+    liiratNews: "أخبار ليرات",
+    financialMarkets: "الأسواق المالية",
+    economicCalendar: "التقويم الاقتصادي",
+    marketAnalysis: "تحليل السوق",
+    tradingSignals: "إشارات التداول",
   },
 } as const
 

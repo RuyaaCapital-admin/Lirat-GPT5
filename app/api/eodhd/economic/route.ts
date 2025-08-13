@@ -7,7 +7,9 @@ export async function GET() {
   }
 
   try {
-    const url = `${process.env.EODHD_BASE}/economic-events?api_token=${token}&fmt=json`
+    const baseUrl = process.env.EODHD_BASE || "https://eodhd.com"
+    const url = `${baseUrl}/api/economic-events?api_token=${token}&fmt=json`
+
     const response = await fetch(url, { cache: "no-store" })
 
     if (!response.ok) {

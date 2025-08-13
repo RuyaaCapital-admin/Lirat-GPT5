@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LiiratLogo } from "@/components/liirat-logo"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation, isRTL } from "@/lib/i18n"
 import { BarChart3, Newspaper, TrendingUp, Bot, Bell, LayoutDashboard } from "lucide-react"
@@ -49,15 +50,11 @@ export function Navigation() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-        {/* Logo */}
+        {/* LIIRAT Logo */}
         <div className="flex items-center space-x-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-              L
-            </div>
-            <span className="font-bold text-xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              LIIRAT
-            </span>
+          <Link href="/" className="flex items-center">
+            <LiiratLogo size="md" showText={true} />
+            <span className="ml-2 text-sm text-muted-foreground font-medium">News</span>
           </Link>
         </div>
 
