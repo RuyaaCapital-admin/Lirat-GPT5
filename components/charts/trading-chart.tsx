@@ -28,14 +28,14 @@ interface TradingChartProps {
 }
 
 const SYMBOLS = [
-  { value: "AAPL.US", label: "Apple Inc" },
-  { value: "GOOGL.US", label: "Alphabet Inc" },
-  { value: "MSFT.US", label: "Microsoft" },
-  { value: "TSLA.US", label: "Tesla Inc" },
-  { value: "AMZN.US", label: "Amazon" },
-  { value: "NVDA.US", label: "NVIDIA" },
-  { value: "META.US", label: "Meta" },
-  { value: "NFLX.US", label: "Netflix" },
+  { value: "AAPL", label: "Apple Inc" },
+  { value: "GOOGL", label: "Alphabet Inc" },
+  { value: "MSFT", label: "Microsoft" },
+  { value: "TSLA", label: "Tesla Inc" },
+  { value: "AMZN", label: "Amazon" },
+  { value: "NVDA", label: "NVIDIA" },
+  { value: "META", label: "Meta" },
+  { value: "NFLX", label: "Netflix" },
   { value: "BTCUSD", label: "Bitcoin" },
   { value: "ETHUSD", label: "Ethereum" },
   { value: "XAUUSD", label: "Gold" },
@@ -178,21 +178,20 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/eodhd/ohlcv?symbol=${symbol}&tf=${timeframe}&lookback=500`)
+      const response = await fetch(`/api/fmp/historical?symbol=${symbol}&period=15min&limit=500`)
       if (response.ok) {
         const data = await response.json()
 
         let chartData = []
         if (data.ohlcv && Array.isArray(data.ohlcv)) {
-          chartData = data.ohlcv.map((item: OHLCVData) => ({
-            time: item.ts,
-            open: item.o,
-            high: item.h,
-            low: item.l,
-            close: item.c,
+          chartData = data.ohlcv.map((item: any) => ({
+            time: item.time,
+            open: item.open,
+            high: item.high,
+            low: item.low,
+            close: item.close,
           }))
         } else if (Array.isArray(data)) {
-          // Handle direct EODHD response format
           chartData = data.map((item: any) => ({
             time: Math.floor(new Date(item.date).getTime() / 1000),
             open: Number.parseFloat(item.open),
@@ -205,7 +204,6 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
         if (chartData.length > 0 && seriesRef.current && typeof seriesRef.current.setData === "function") {
           seriesRef.current.setData(chartData)
 
-          // Calculate price change
           if (chartData.length >= 2) {
             const current = chartData[chartData.length - 1]
             const previous = chartData[chartData.length - 2]

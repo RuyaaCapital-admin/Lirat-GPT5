@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { TrendingUp, TrendingDown } from "lucide-react"
 
 interface TickerData {
@@ -12,31 +12,33 @@ interface TickerData {
 }
 
 const TICKER_SYMBOLS = [
-  { symbol: "AAPL.US", displayName: "AAPL" },
-  { symbol: "GOOGL.US", displayName: "GOOGL" },
-  { symbol: "MSFT.US", displayName: "MSFT" },
-  { symbol: "TSLA.US", displayName: "TSLA" },
-  { symbol: "AMZN.US", displayName: "AMZN" },
-  { symbol: "NVDA.US", displayName: "NVDA" },
-  { symbol: "META.US", displayName: "META" },
-  { symbol: "NFLX.US", displayName: "NFLX" },
-  { symbol: "BTCUSD", displayName: "BTC" },
-  { symbol: "ETHUSD", displayName: "ETH" },
-  { symbol: "XAUUSD", displayName: "GOLD" },
-  { symbol: "XAGUSD", displayName: "SILVER" },
-  { symbol: "EURUSD", displayName: "EUR/USD" },
-  { symbol: "GBPUSD", displayName: "GBP/USD" },
-  { symbol: "USDJPY", displayName: "USD/JPY" },
+  { symbol: "AAPL", displayName: "AAPL" },
+  { symbol: "GOOGL", displayName: "GOOGL" },
+  { symbol: "MSFT", displayName: "MSFT" },
+  { symbol: "TSLA", displayName: "TSLA" },
+  { symbol: "AMZN", displayName: "AMZN" },
+  { symbol: "NVDA", displayName: "NVDA" },
+  { symbol: "META", displayName: "META" },
+  { symbol: "NFLX", displayName: "NFLX" },
+  { symbol: "SPY", displayName: "SPY" },
+  { symbol: "JPM", displayName: "JPM" },
+  { symbol: "BA", displayName: "BA" },
+  { symbol: "DIS", displayName: "DIS" },
+  { symbol: "V", displayName: "V" },
+  { symbol: "JNJ", displayName: "JNJ" },
+  { symbol: "WMT", displayName: "WMT" },
 ]
 
 export function PriceTicker() {
   const [tickerData, setTickerData] = useState<TickerData[]>([])
   const [loading, setLoading] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const tickerRef = useRef<HTMLDivElement>(null)
 
   const fetchTickerData = async () => {
     try {
       const promises = TICKER_SYMBOLS.map(async ({ symbol, displayName }) => {
-        const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
+        const response = await fetch(`/api/fmp/quote?symbol=${symbol}`)
         if (response.ok) {
           const data = await response.json()
           return {
@@ -62,17 +64,22 @@ export function PriceTicker() {
 
   useEffect(() => {
     fetchTickerData()
-    const interval = setInterval(fetchTickerData, 30000) // Update every 30 seconds
+    const interval = setInterval(fetchTickerData, 30000)
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    const ticker = tickerRef.current
+    if (!ticker || tickerData.length === 0) return
+
+    // Reset animation when data changes
+    ticker.style.animation = "none"
+    setTimeout(() => {
+      ticker.style.animation = `scroll-ticker ${tickerData.length * 4}s linear infinite`
+    }, 10)
+  }, [tickerData])
+
   const formatPrice = (price: number, symbol: string) => {
-    if (symbol.includes("BTC") || symbol.includes("ETH")) {
-      return price.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-    }
-    if (symbol.includes("GOLD") || symbol.includes("SILVER")) {
-      return price.toFixed(2)
-    }
     if (symbol.includes("JPY")) {
       return price.toFixed(2)
     }
@@ -105,39 +112,52 @@ export function PriceTicker() {
   return (
     <div className="bg-muted/30 border-b border-border overflow-hidden">
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="h-12 flex items-center">
-          <div className="price-ticker flex items-center space-x-8 whitespace-nowrap">
-            {tickerData.concat(tickerData).map((item, index) => (
-              <div key={`${item.symbol}-${index}`} className="flex items-center space-x-2 flex-shrink-0">
-                <span className="font-medium text-sm">{item.displayName}</span>
-                <span className="font-mono text-sm">
-                  {item.symbol.includes("BTC") || item.symbol.includes("ETH") ? "$" : ""}
-                  {formatPrice(item.price, item.symbol)}
-                  {item.symbol.includes("USD") &&
-                  !item.symbol.includes(".US") &&
-                  !item.symbol.includes("BTC") &&
-                  !item.symbol.includes("ETH")
-                    ? ""
-                    : item.symbol.includes(".US")
-                      ? ""
-                      : ""}
-                </span>
-                <div
-                  className={`flex items-center space-x-1 text-xs ${
-                    item.changePercent >= 0 ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {item.changePercent >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  <span>
-                    {item.changePercent >= 0 ? "+" : ""}
-                    {item.changePercent.toFixed(2)}%
-                  </span>
+        <div className="h-12 flex items-center overflow-hidden" ref={containerRef}>
+          <div
+            className="price-ticker flex items-center space-x-8 whitespace-nowrap"
+            ref={tickerRef}
+            style={{
+              animation: tickerData.length > 0 ? `scroll-ticker ${tickerData.length * 4}s linear infinite` : "none",
+            }}
+          >
+            {tickerData
+              .concat(tickerData)
+              .concat(tickerData)
+              .map((item, index) => (
+                <div key={`${item.symbol}-${index}`} className="flex items-center space-x-2 flex-shrink-0">
+                  <span className="font-medium text-sm">{item.displayName}</span>
+                  <span className="font-mono text-sm">{formatPrice(item.price, item.symbol)}</span>
+                  <div
+                    className={`flex items-center space-x-1 text-xs ${
+                      item.changePercent >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {item.changePercent >= 0 ? (
+                      <TrendingUp className="h-3 w-3" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3" />
+                    )}
+                    <span>
+                      {item.changePercent >= 0 ? "+" : ""}
+                      {item.changePercent.toFixed(2)}%
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes scroll-ticker {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-33.333%);
+          }
+        }
+      `}</style>
     </div>
   )
 }

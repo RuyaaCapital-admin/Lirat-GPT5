@@ -9,13 +9,12 @@ import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 
 interface NewsItem {
-  ts?: string
-  time?: string
-  source?: string
-  headline?: string
-  event?: string
-  country?: string
-  impact?: string
+  publishedDate?: string
+  symbol?: string
+  title?: string
+  text?: string
+  image?: string
+  link?: string
 }
 
 interface NewsPreviewCardProps {
@@ -32,10 +31,11 @@ export function NewsPreviewCard({ type, title, href }: NewsPreviewCardProps) {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch(`/api/eodhd/${type}`)
+        const response = await fetch(`/api/fmp/news`)
         if (response.ok) {
           const data = await response.json()
-          setNews(data.items?.slice(0, 5) || [])
+          const newsItems = Array.isArray(data.items) ? data.items : Array.isArray(data) ? data : []
+          setNews(newsItems.slice(0, 5))
         }
       } catch (error) {
         console.error(`Failed to fetch ${type} news:`, error)
@@ -54,20 +54,6 @@ export function NewsPreviewCard({ type, title, href }: NewsPreviewCardProps) {
       return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     } catch {
       return timeStr
-    }
-  }
-
-  const getImpactColor = (impact?: string) => {
-    if (!impact) return "bg-muted"
-    switch (impact.toLowerCase()) {
-      case "high":
-        return "bg-red-500"
-      case "medium":
-        return "bg-yellow-500"
-      case "low":
-        return "bg-green-500"
-      default:
-        return "bg-muted"
     }
   }
 
@@ -99,19 +85,11 @@ export function NewsPreviewCard({ type, title, href }: NewsPreviewCardProps) {
             news.map((item, index) => (
               <div key={index} className="p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
                 <div className="space-y-2">
-                  <div className="flex items-start justify-between">
-                    <p className="text-sm font-medium line-clamp-2">
-                      {item.headline || item.event || "No title available"}
-                    </p>
-                    {item.impact && (
-                      <div className={`w-2 h-2 rounded-full ${getImpactColor(item.impact)} ml-2 mt-1 flex-shrink-0`} />
-                    )}
-                  </div>
+                  <p className="text-sm font-medium line-clamp-2">{item.title || "No title available"}</p>
                   <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    <span>{formatTime(item.ts || item.time)}</span>
-                    {item.source && <span>• {item.source}</span>}
-                    {item.country && <span>• {item.country}</span>}
+                    <span>{formatTime(item.publishedDate)}</span>
+                    {item.symbol && <span>• {item.symbol}</span>}
                   </div>
                 </div>
               </div>

@@ -15,10 +15,10 @@ interface MarketData {
 }
 
 const majorSymbols = [
-  "AAPL.US",
-  "GOOGL.US",
-  "MSFT.US",
-  "TSLA.US",
+  "AAPL",
+  "GOOGL",
+  "MSFT",
+  "TSLA",
   "BTCUSD",
   "ETHUSD",
   "XAUUSD",
@@ -26,7 +26,7 @@ const majorSymbols = [
   "EURUSD",
   "GBPUSD",
   "USDJPY",
-  "NVDA.US",
+  "NVDA",
 ]
 
 export function MarketOverviewCard() {
@@ -39,7 +39,7 @@ export function MarketOverviewCard() {
     setLoading(true)
     try {
       const promises = majorSymbols.map(async (symbol) => {
-        const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
+        const response = await fetch(`/api/fmp/quote?symbol=${symbol}`)
         if (response.ok) {
           return await response.json()
         }

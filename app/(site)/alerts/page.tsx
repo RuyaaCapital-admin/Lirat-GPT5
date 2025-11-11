@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Bell, Plus, Trash2, TrendingUp, TrendingDown, Edit, RefreshCw } from "lucide-react"
+import { Bell, Plus, Trash2, TrendingUp, TrendingDown, Edit, RefreshCw, Search } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 import { toast } from "sonner"
@@ -31,20 +31,18 @@ interface MarketPrice {
   changePercent: number
 }
 
-const ALERT_SYMBOLS = [
-  { value: "XAUUSD", label: "Gold/USD" },
-  { value: "XAGUSD", label: "Silver/USD" },
-  { value: "EURUSD", label: "EUR/USD" },
-  { value: "GBPUSD", label: "GBP/USD" },
-  { value: "USDJPY", label: "USD/JPY" },
-  { value: "USDCHF", label: "USD/CHF" },
-  { value: "AUDUSD", label: "AUD/USD" },
-  { value: "AAPL.US", label: "Apple Inc" },
-  { value: "GOOGL.US", label: "Alphabet Inc" },
-  { value: "MSFT.US", label: "Microsoft" },
-  { value: "TSLA.US", label: "Tesla Inc" },
-  { value: "BTCUSD", label: "Bitcoin" },
-  { value: "ETHUSD", label: "Ethereum" },
+interface FMPSymbol {
+  symbol: string
+  name: string
+  exchangeShortName: string
+}
+
+const INITIAL_SYMBOLS = [
+  { value: "AAPL", label: "Apple Inc" },
+  { value: "GOOGL", label: "Alphabet Inc" },
+  { value: "MSFT", label: "Microsoft" },
+  { value: "TSLA", label: "Tesla Inc" },
+  { value: "AMZN", label: "Amazon" },
 ]
 
 export default function AlertsPage() {
@@ -53,26 +51,67 @@ export default function AlertsPage() {
   const [loadingPrices, setLoadingPrices] = useState(false)
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [symbolSearch, setSymbolSearch] = useState("")
+  const [symbolSearchResults, setSymbolSearchResults] = useState<FMPSymbol[]>([])
+  const [searchingSymbols, setSearchingSymbols] = useState(false)
+  const [availableSymbols, setAvailableSymbols] = useState<{ value: string; label: string }[]>(INITIAL_SYMBOLS)
 
   const [newAlert, setNewAlert] = useState({
-    symbol: "XAUUSD",
+    symbol: "AAPL",
     condition: "above",
     value: "",
   })
 
   const { locale } = useLocale()
 
-  const fetchCurrentPrice = async (symbol: string): Promise<MarketPrice | null> => {
+  const searchFMPSymbols = async (query: string) => {
+    if (!query || query.length < 1) {
+      setSymbolSearchResults([])
+      return
+    }
+
+    setSearchingSymbols(true)
     try {
-      const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
+      const response = await fetch(`/api/fmp/search?query=${query}`)
       if (response.ok) {
         const data = await response.json()
-        return {
+        const results = data.results?.slice(0, 10) || []
+        setSymbolSearchResults(results)
+      }
+    } catch (error) {
+      console.error("Failed to search symbols:", error)
+    } finally {
+      setSearchingSymbols(false)
+    }
+  }
+
+  const handleSelectSymbol = (symbol: string, name: string) => {
+    setNewAlert({ ...newAlert, symbol })
+    setSymbolSearch("")
+    setSymbolSearchResults([])
+
+    // Add to available symbols if not already present
+    if (!availableSymbols.find((s) => s.value === symbol)) {
+      setAvailableSymbols((prev) => [...prev, { value: symbol, label: name }])
+    }
+
+    // Fetch current price immediately
+    fetchCurrentPrice(symbol)
+  }
+
+  const fetchCurrentPrice = async (symbol: string): Promise<MarketPrice | null> => {
+    try {
+      const response = await fetch(`/api/fmp/quote?symbol=${symbol}`)
+      if (response.ok) {
+        const data = await response.json()
+        const price: MarketPrice = {
           symbol,
           price: data.price || 0,
           change: data.change || 0,
           changePercent: data.changePercent || 0,
         }
+        setCurrentPrices((prev) => ({ ...prev, [symbol]: price }))
+        return price
       }
     } catch (error) {
       console.error(`Failed to fetch price for ${symbol}:`, error)
@@ -83,18 +122,9 @@ export default function AlertsPage() {
   const fetchAllPrices = async () => {
     setLoadingPrices(true)
     try {
-      const symbols = ALERT_SYMBOLS.map((s) => s.value)
+      const symbols = availableSymbols.map((s) => s.value)
       const promises = symbols.map((symbol) => fetchCurrentPrice(symbol))
-      const results = await Promise.all(promises)
-
-      const pricesMap: Record<string, MarketPrice> = {}
-      results.forEach((result) => {
-        if (result) {
-          pricesMap[result.symbol] = result
-        }
-      })
-
-      setCurrentPrices(pricesMap)
+      await Promise.all(promises)
     } catch (error) {
       console.error("Failed to fetch prices:", error)
     } finally {
@@ -104,9 +134,9 @@ export default function AlertsPage() {
 
   useEffect(() => {
     fetchAllPrices()
-    const interval = setInterval(fetchAllPrices, 30000) // Update every 30 seconds
+    const interval = setInterval(fetchAllPrices, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [availableSymbols])
 
   const handleCreateAlert = async () => {
     if (!newAlert.value) return
@@ -122,7 +152,7 @@ export default function AlertsPage() {
     }
 
     setAlerts((prev) => [alert, ...prev])
-    setNewAlert({ symbol: "XAUUSD", condition: "above", value: "" })
+    setNewAlert({ symbol: "AAPL", condition: "above", value: "" })
     toast.success("Price alert created successfully!")
   }
 
@@ -173,12 +203,14 @@ export default function AlertsPage() {
   const triggeredAlerts = alerts.filter((alert) => alert.status === "triggered").length
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       {/* Header */}
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "alerts")}</h1>
         <p className="text-muted-foreground">
-          Manage your price alerts and get notified when market conditions are met
+          {locale === "ar"
+            ? "إدارة تنبيهات الأسعار والإخطارات الخاصة بك عند تحقق شروط السوق"
+            : "Manage your price alerts and get notified when market conditions are met"}
         </p>
       </div>
 
@@ -186,34 +218,42 @@ export default function AlertsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {locale === "ar" ? "التنبيهات النشطة" : "Active Alerts"}
+            </CardTitle>
             <Bell className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeAlerts}</div>
-            <p className="text-xs text-muted-foreground">Currently monitoring</p>
+            <p className="text-xs text-muted-foreground">
+              {locale === "ar" ? "قيد المراقبة حالياً" : "Currently monitoring"}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Triggered Today</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {locale === "ar" ? "المُطلقة اليوم" : "Triggered Today"}
+            </CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{triggeredAlerts}</div>
-            <p className="text-xs text-muted-foreground">Alerts triggered</p>
+            <p className="text-xs text-muted-foreground">{locale === "ar" ? "تنبيهات مُطلقة" : "Alerts triggered"}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Alerts</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {locale === "ar" ? "إجمالي التنبيهات" : "Total Alerts"}
+            </CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{alerts.length}</div>
-            <p className="text-xs text-muted-foreground">All time</p>
+            <p className="text-xs text-muted-foreground">{locale === "ar" ? "كل الوقت" : "All time"}</p>
           </CardContent>
         </Card>
       </div>
@@ -226,7 +266,7 @@ export default function AlertsPage() {
               <div className="flex items-center justify-between">
                 <ModernPanelTitle className="flex items-center space-x-2">
                   <Plus className="h-4 w-4" />
-                  <span>Create Alert</span>
+                  <span>{locale === "ar" ? "إنشاء تنبيه" : "Create Alert"}</span>
                 </ModernPanelTitle>
                 <Button
                   variant="ghost"
@@ -242,7 +282,52 @@ export default function AlertsPage() {
             <ModernPanelContent>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Symbol</label>
+                  <label className="text-sm font-medium mb-2 block">
+                    {locale === "ar" ? "البحث عن الرمز" : "Search Symbol"}
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder={getTranslation(locale, "searchSymbols")}
+                      value={symbolSearch}
+                      onChange={(e) => {
+                        setSymbolSearch(e.target.value)
+                        searchFMPSymbols(e.target.value)
+                      }}
+                      className="pl-8"
+                    />
+                  </div>
+
+                  {/* Symbol search results dropdown */}
+                  {symbolSearch && (
+                    <div className="absolute mt-1 w-full bg-card border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {searchingSymbols ? (
+                        <div className="p-3 text-center text-sm text-muted-foreground">
+                          {locale === "ar" ? "جاري البحث..." : "Searching..."}
+                        </div>
+                      ) : symbolSearchResults.length > 0 ? (
+                        symbolSearchResults.map((result: FMPSymbol) => (
+                          <button
+                            key={result.symbol}
+                            onClick={() => handleSelectSymbol(result.symbol, result.name)}
+                            className="w-full text-left px-3 py-2 hover:bg-muted/50 border-b last:border-b-0 text-sm"
+                          >
+                            <div className="font-medium">{result.symbol}</div>
+                            <div className="text-xs text-muted-foreground">{result.name}</div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-3 text-center text-sm text-muted-foreground">
+                          {getTranslation(locale, "noSymbolsFound")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Selected symbol or dropdown */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">{locale === "ar" ? "الرمز" : "Symbol"}</label>
                   <Select
                     value={newAlert.symbol}
                     onValueChange={(value) => setNewAlert({ ...newAlert, symbol: value })}
@@ -251,7 +336,7 @@ export default function AlertsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {ALERT_SYMBOLS.map((symbol) => (
+                      {availableSymbols.map((symbol) => (
                         <SelectItem key={symbol.value} value={symbol.value}>
                           {symbol.label}
                         </SelectItem>
@@ -262,7 +347,7 @@ export default function AlertsPage() {
 
                 <div className="p-3 rounded-lg bg-muted/50 border">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Current Price:</span>
+                    <span className="text-sm font-medium">{locale === "ar" ? "السعر الحالي:" : "Current Price:"}</span>
                     <div className="flex items-center space-x-2">
                       <span className="font-mono text-sm font-semibold">{getCurrentPrice(newAlert.symbol)}</span>
                       {currentPrices[newAlert.symbol] && (
@@ -287,7 +372,7 @@ export default function AlertsPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Condition</label>
+                  <label className="text-sm font-medium mb-2 block">{locale === "ar" ? "الشرط" : "Condition"}</label>
                   <Select
                     value={newAlert.condition}
                     onValueChange={(value) => setNewAlert({ ...newAlert, condition: value })}
@@ -296,18 +381,20 @@ export default function AlertsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="above">Price Above</SelectItem>
-                      <SelectItem value="below">Price Below</SelectItem>
+                      <SelectItem value="above">{locale === "ar" ? "السعر فوق" : "Price Above"}</SelectItem>
+                      <SelectItem value="below">{locale === "ar" ? "السعر تحت" : "Price Below"}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Price Level</label>
+                  <label className="text-sm font-medium mb-2 block">
+                    {locale === "ar" ? "مستوى السعر" : "Price Level"}
+                  </label>
                   <Input
                     type="number"
                     step="0.0001"
-                    placeholder="Enter price level"
+                    placeholder={locale === "ar" ? "أدخل مستوى السعر" : "Enter price level"}
                     value={newAlert.value}
                     onChange={(e) => setNewAlert({ ...newAlert, value: e.target.value })}
                   />
@@ -315,7 +402,7 @@ export default function AlertsPage() {
 
                 <Button onClick={handleCreateAlert} className="w-full" disabled={!newAlert.value}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Alert
+                  {locale === "ar" ? "إنشاء تنبيه" : "Create Alert"}
                 </Button>
               </div>
             </ModernPanelContent>
@@ -326,15 +413,17 @@ export default function AlertsPage() {
         <div className="lg:col-span-2">
           <ModernPanel>
             <ModernPanelHeader>
-              <ModernPanelTitle>Your Alerts</ModernPanelTitle>
+              <ModernPanelTitle>{locale === "ar" ? "تنبيهاتك" : "Your Alerts"}</ModernPanelTitle>
             </ModernPanelHeader>
             <ModernPanelContent>
               <div className="space-y-3">
                 {alerts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No alerts created yet</p>
-                    <p className="text-sm">Create your first alert to get started</p>
+                    <p>{locale === "ar" ? "لم يتم إنشاء تنبيهات بعد" : "No alerts created yet"}</p>
+                    <p className="text-sm">
+                      {locale === "ar" ? "أنشئ تنبيهك الأول للبدء" : "Create your first alert to get started"}
+                    </p>
                   </div>
                 ) : (
                   alerts.map((alert) => (
@@ -357,7 +446,8 @@ export default function AlertsPage() {
                         {getStatusBadge(alert.status)}
                         {currentPrices[alert.symbol] && (
                           <div className="text-xs text-muted-foreground">
-                            Current: {formatPrice(currentPrices[alert.symbol].price, alert.symbol)}
+                            {locale === "ar" ? "الحالي:" : "Current:"}{" "}
+                            {formatPrice(currentPrices[alert.symbol].price, alert.symbol)}
                           </div>
                         )}
                       </div>
@@ -394,13 +484,13 @@ export default function AlertsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <Edit className="h-5 w-5" />
-              <span>Edit Alert</span>
+              <span>{locale === "ar" ? "تعديل التنبيه" : "Edit Alert"}</span>
             </DialogTitle>
           </DialogHeader>
           {editingAlert && (
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-symbol">Symbol</Label>
+                <Label htmlFor="edit-symbol">{locale === "ar" ? "الرمز" : "Symbol"}</Label>
                 <Select
                   value={editingAlert.symbol}
                   onValueChange={(value) => setEditingAlert({ ...editingAlert, symbol: value })}
@@ -409,7 +499,7 @@ export default function AlertsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ALERT_SYMBOLS.map((symbol) => (
+                    {availableSymbols.map((symbol) => (
                       <SelectItem key={symbol.value} value={symbol.value}>
                         {symbol.label}
                       </SelectItem>
@@ -420,13 +510,13 @@ export default function AlertsPage() {
 
               <div className="p-3 rounded-lg bg-muted/50 border">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Current Price:</span>
+                  <span className="text-sm font-medium">{locale === "ar" ? "السعر الحالي:" : "Current Price:"}</span>
                   <span className="font-mono text-sm font-semibold">{getCurrentPrice(editingAlert.symbol)}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-condition">Condition</Label>
+                <Label htmlFor="edit-condition">{locale === "ar" ? "الشرط" : "Condition"}</Label>
                 <Select
                   value={editingAlert.condition}
                   onValueChange={(value) => setEditingAlert({ ...editingAlert, condition: value })}
@@ -435,14 +525,14 @@ export default function AlertsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="above">Price Above</SelectItem>
-                    <SelectItem value="below">Price Below</SelectItem>
+                    <SelectItem value="above">{locale === "ar" ? "السعر فوق" : "Price Above"}</SelectItem>
+                    <SelectItem value="below">{locale === "ar" ? "السعر تحت" : "Price Below"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-value">Price Level</Label>
+                <Label htmlFor="edit-value">{locale === "ar" ? "مستوى السعر" : "Price Level"}</Label>
                 <Input
                   id="edit-value"
                   type="number"
@@ -453,7 +543,7 @@ export default function AlertsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="edit-status">{locale === "ar" ? "الحالة" : "Status"}</Label>
                 <Select
                   value={editingAlert.status}
                   onValueChange={(value: "active" | "triggered" | "expired") =>
@@ -464,16 +554,16 @@ export default function AlertsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="triggered">Triggered</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
+                    <SelectItem value="active">{locale === "ar" ? "نشط" : "Active"}</SelectItem>
+                    <SelectItem value="triggered">{locale === "ar" ? "مُطلق" : "Triggered"}</SelectItem>
+                    <SelectItem value="expired">{locale === "ar" ? "منتهي الصلاحية" : "Expired"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <Button onClick={handleUpdateAlert} className="w-full">
                 <Edit className="h-4 w-4 mr-2" />
-                Update Alert
+                {locale === "ar" ? "تحديث التنبيه" : "Update Alert"}
               </Button>
             </div>
           )}

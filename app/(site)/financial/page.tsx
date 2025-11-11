@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
-import { Clock, Building, Newspaper, TrendingUp } from "lucide-react"
+import { Clock, Newspaper, TrendingUp } from "lucide-react"
 
 export default function FinancialPage() {
   const [data, setData] = useState<Row[]>([])
@@ -16,7 +16,7 @@ export default function FinancialPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/eodhd/financial", { cache: "no-store" })
+      const response = await fetch("/api/fmp/news", { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
         setData(result.items || [])
@@ -157,16 +157,6 @@ export default function FinancialPage() {
       cell: ({ row }: { row: any }) => <div className="font-mono text-sm">{formatTime(row.getValue("ts"))}</div>,
     },
     {
-      accessorKey: "source",
-      header: () => (
-        <div className="flex items-center space-x-1">
-          <Building className="h-4 w-4" />
-          <span>{getTranslation(locale, "source")}</span>
-        </div>
-      ),
-      cell: ({ row }: { row: any }) => <div className="font-medium">{row.getValue("source") || "N/A"}</div>,
-    },
-    {
       accessorKey: "headline",
       header: () => (
         <div className="flex items-center space-x-1">
@@ -175,7 +165,7 @@ export default function FinancialPage() {
         </div>
       ),
       cell: ({ row }: { row: any }) => (
-        <div className="max-w-[400px]">
+        <div className="max-w-[500px]">
           <div className="font-medium line-clamp-3 break-words overflow-hidden text-ellipsis">
             {row.getValue("headline") || "N/A"}
           </div>
@@ -221,17 +211,21 @@ export default function FinancialPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "financial")}</h1>
-        <p className="text-muted-foreground">Latest financial news and market updates from trusted sources worldwide</p>
+        <p className="text-muted-foreground">
+          {locale === "ar"
+            ? "أحدث الأخبار المالية وتحديثات السوق من مصادر موثوقة في جميع أنحاء العالم"
+            : "Latest financial news and market updates from trusted sources worldwide"}
+        </p>
       </div>
 
       <DataTable
         columns={columns}
         data={data}
         title="LIIRAT News Feed"
-        searchPlaceholder="Search headlines, sources, symbols..."
+        searchPlaceholder={locale === "ar" ? "ابحث عن العناوين والرموز..." : "Search headlines, symbols..."}
         loading={loading}
         onRefresh={fetchData}
       />

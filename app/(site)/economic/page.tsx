@@ -17,7 +17,7 @@ export default function EconomicPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/eodhd/economic", { cache: "no-store" })
+      const response = await fetch("/api/fmp/economic-calendar", { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
         setData(result.items || [])
@@ -99,10 +99,11 @@ export default function EconomicPage() {
       ),
       cell: ({ row }: { row: any }) => {
         const country = row.getValue("country") || "N/A"
+        const countryName = typeof country === "string" ? country : String(country)
         return (
           <div className="flex items-center space-x-2">
-            <CountryFlag countryCode={country} countryName={country} size="sm" />
-            <span className="font-medium">{country}</span>
+            <CountryFlag countryCode={countryName} countryName={countryName} size="sm" />
+            <span className="font-medium text-sm line-clamp-1">{countryName}</span>
           </div>
         )
       },
@@ -174,17 +175,21 @@ export default function EconomicPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "economic")}</h1>
-        <p className="text-muted-foreground">Real-time economic events and indicators from major economies worldwide</p>
+        <p className="text-muted-foreground">
+          {locale === "ar"
+            ? "أحداث اقتصادية حقيقية ومؤشرات من أكبر الاقتصادات العالمية"
+            : "Real-time economic events and indicators from major economies worldwide"}
+        </p>
       </div>
 
       <DataTable
         columns={columns}
         data={data}
-        title="Economic Calendar"
-        searchPlaceholder="Search events, countries..."
+        title={getTranslation(locale, "economicCalendar")}
+        searchPlaceholder={locale === "ar" ? "ابحث عن الأحداث والدول..." : "Search events, countries..."}
         loading={loading}
         onRefresh={fetchData}
       />

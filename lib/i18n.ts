@@ -50,6 +50,12 @@ export const translations = {
     economicCalendar: "Economic Calendar",
     marketAnalysis: "Market Analysis",
     tradingSignals: "Trading Signals",
+
+    // Additional translations
+    addAlert: "Add Alert",
+    searchSymbols: "Search symbols...",
+    selectSymbol: "Select Symbol",
+    noSymbolsFound: "No symbols found",
   },
   ar: {
     // Navigation
@@ -97,6 +103,12 @@ export const translations = {
     economicCalendar: "التقويم الاقتصادي",
     marketAnalysis: "تحليل السوق",
     tradingSignals: "إشارات التداول",
+
+    // Additional translations
+    addAlert: "إضافة تنبيه",
+    searchSymbols: "البحث عن الرموز...",
+    selectSymbol: "حدد الرمز",
+    noSymbolsFound: "لم يتم العثور على رموز",
   },
 } as const
 

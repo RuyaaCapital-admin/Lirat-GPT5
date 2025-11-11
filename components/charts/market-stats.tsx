@@ -23,9 +23,9 @@ export function MarketStats({ currentSymbol }: MarketStatsProps) {
     const fetchStats = async () => {
       setLoading(true)
       try {
-        const symbols = ["XAUUSD", "EURUSD", "BTCUSD", "AAPL.US", "GBPUSD", "ETHUSD"]
+        const symbols = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "NVDA"]
         const promises = symbols.map(async (symbol) => {
-          const response = await fetch(`/api/eodhd/realtime?symbol=${symbol}`)
+          const response = await fetch(`/api/fmp/quote?symbol=${symbol}`)
           if (response.ok) {
             return await response.json()
           }
@@ -47,8 +47,8 @@ export function MarketStats({ currentSymbol }: MarketStatsProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const formatPrice = (price: number, symbol: string) => {
-    return symbol.includes("JPY") ? price.toFixed(2) : price.toFixed(4)
+  const formatPrice = (price: number) => {
+    return price.toFixed(2)
   }
 
   const currentStats = stats.find((stat) => stat.symbol === currentSymbol)
@@ -65,7 +65,7 @@ export function MarketStats({ currentSymbol }: MarketStatsProps) {
             <div className="h-6 bg-muted animate-pulse rounded"></div>
           ) : currentStats ? (
             <>
-              <div className="text-2xl font-bold font-mono">{formatPrice(currentStats.price, currentStats.symbol)}</div>
+              <div className="text-2xl font-bold font-mono">${formatPrice(currentStats.price)}</div>
               <p className="text-xs text-muted-foreground">{currentStats.symbol}</p>
             </>
           ) : (
@@ -91,8 +91,7 @@ export function MarketStats({ currentSymbol }: MarketStatsProps) {
                 {currentStats.changePercent.toFixed(2)}%
               </div>
               <p className="text-xs text-muted-foreground">
-                {currentStats.change >= 0 ? "+" : ""}
-                {formatPrice(currentStats.change, currentStats.symbol)}
+                {currentStats.change >= 0 ? "+" : ""}${formatPrice(currentStats.change)}
               </p>
             </>
           ) : (
