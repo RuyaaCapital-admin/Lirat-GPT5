@@ -322,7 +322,7 @@ function EconomicCalendarWidgetComponent() {
           position: relative;
           width: 100%;
           max-width: 100%;
-          min-height: 820px;
+          min-height: 840px;
           height: auto;
           background: linear-gradient(180deg, rgba(250, 252, 250, 0.98), rgba(233, 243, 236, 0.94));
           border-radius: 32px;
@@ -330,6 +330,10 @@ function EconomicCalendarWidgetComponent() {
           box-shadow: 0 28px 80px rgba(26, 46, 31, 0.16);
           overflow: hidden;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          padding: clamp(22px, 4vw, 32px) clamp(20px, 3vw, 32px) 140px;
         }
 
         [data-theme="dark"] .calendar-wrapper,
@@ -340,15 +344,14 @@ function EconomicCalendarWidgetComponent() {
         }
 
         .calendar-controls {
-          position: absolute;
-          inset-inline: clamp(18px, 4vw, 32px);
-          top: clamp(18px, 3vw, 32px);
+          position: relative;
           display: flex;
           flex-wrap: wrap;
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          z-index: 20;
+          margin-bottom: clamp(16px, 3vw, 28px);
+          z-index: 5;
           pointer-events: none;
         }
 
@@ -481,7 +484,8 @@ function EconomicCalendarWidgetComponent() {
           width: 100%;
           max-width: 100%;
           height: 100%;
-          min-height: 820px;
+          min-height: 760px;
+          flex: 1 1 auto;
           box-sizing: border-box;
           transition: opacity 0.3s ease;
           border-radius: 28px;
@@ -508,7 +512,7 @@ function EconomicCalendarWidgetComponent() {
           width: 100% !important;
           max-width: 100% !important;
           height: 100% !important;
-          min-height: 820px !important;
+          min-height: 760px !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
         }
@@ -516,8 +520,8 @@ function EconomicCalendarWidgetComponent() {
         #economicCalendarWidget iframe {
           width: 100% !important;
           max-width: 100% !important;
-          height: 820px !important;
-          min-height: 820px !important;
+          height: 760px !important;
+          min-height: 760px !important;
           border: none !important;
           box-sizing: border-box !important;
           border-radius: 24px !important;
@@ -629,7 +633,7 @@ function EconomicCalendarWidgetComponent() {
           width: 42px;
           height: 42px;
           border-radius: 16px;
-          background-image: url("/liirat-logo.png");
+          background-image: url("/images/liirat-logo.png");
           background-size: cover;
           background-position: center;
           background-repeat: no-repeat;
@@ -892,8 +896,6 @@ function EconomicCalendarWidgetComponent() {
           }
 
           .calendar-controls {
-            inset-inline: 18px;
-            top: 18px;
             flex-direction: column;
             align-items: stretch;
             gap: 10px;

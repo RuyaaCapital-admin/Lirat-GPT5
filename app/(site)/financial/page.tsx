@@ -30,7 +30,7 @@ export default function FinancialPage() {
         throw new Error("Failed to fetch financial news")
       }
       const result = await response.json()
-      const mapped: NewsItem[] = (result.items || []).slice(0, 24).map((item: any) => ({
+      const mapped: NewsItem[] = (result.items || []).slice(0, 40).map((item: any) => ({
         title: item.title,
         link: item.link,
         text: item.text,
@@ -38,7 +38,13 @@ export default function FinancialPage() {
         image: item.image,
         symbol: item.symbol,
       }))
-      setItems(mapped)
+      const deduped = mapped.filter(
+        (item, index, array) => array.findIndex((candidate) => candidate.title === item.title) === index,
+      )
+      const prioritised = deduped
+        .sort((a, b) => Number(Boolean(b.image)) - Number(Boolean(a.image)))
+        .slice(0, 24)
+      setItems(prioritised)
     } catch (error) {
       console.error("Failed to fetch financial data:", error)
       setError(true)
@@ -189,6 +195,15 @@ function FeaturedStory({
   formatTime: (timeStr: string) => string
   locale: string
 }) {
+  const hasImage = Boolean(item.image)
+  const imageStyle = hasImage
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(6,17,11,0.05) 0%, rgba(6,17,11,0.78) 100%), url(${item.image})`,
+      }
+    : {
+        backgroundImage: "linear-gradient(180deg, rgba(28,58,38,0.35) 0%, rgba(6,17,11,0.85) 100%)",
+      }
+
   return (
     <article className="relative overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-br from-white/85 via-white/70 to-white/40 p-8 shadow-[0_40px_120px_rgba(15,23,42,0.15)] backdrop-blur-xl dark:border-white/10 dark:from-primary/10 dark:via-background/80 dark:to-background/70 dark:shadow-[0_40px_120px_rgba(2,6,23,0.6)]">
       <div className="pointer-events-none absolute inset-0 opacity-80">
@@ -196,6 +211,16 @@ function FeaturedStory({
         <div className="absolute -bottom-32 right-0 h-56 w-56 rounded-full bg-sky-400/10 blur-[140px]" />
       </div>
       <div className="relative flex h-full flex-col justify-between gap-6">
+        <div className="relative overflow-hidden rounded-[24px] border border-white/30 shadow-inner dark:border-white/10">
+          <div
+            className="h-52 w-full transition-transform duration-500 will-change-transform hover:scale-[1.02]"
+            style={{
+              ...imageStyle,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        </div>
         <div className="space-y-4">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.35em] text-primary">
             {locale === "ar" ? "أبرز العناوين" : "Spotlight story"}
@@ -228,9 +253,26 @@ function FeaturedStory({
 }
 
 function SecondaryCard({ item, formatTime }: { item: NewsItem; formatTime: (timeStr: string) => string }) {
+  const imageStyle = item.image
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(6,17,11,0.05) 0%, rgba(6,17,11,0.75) 100%), url(${item.image})`,
+      }
+    : {
+        backgroundImage: "linear-gradient(180deg, rgba(28,58,38,0.35) 0%, rgba(6,17,11,0.8) 100%)",
+      }
   return (
     <article className="group rounded-[22px] border border-white/30 bg-white/80 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.12)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_28px_80px_rgba(15,23,42,0.18)] backdrop-blur dark:border-white/10 dark:bg-background/75 dark:shadow-[0_26px_80px_rgba(2,6,23,0.55)]">
       <a href={item.link || "#"} target="_blank" rel="noopener noreferrer" className="flex h-full flex-col gap-4">
+        <div className="relative h-32 w-full overflow-hidden rounded-[18px] border border-white/30 shadow-inner dark:border-white/10">
+          <div
+            className="absolute inset-0 transition-transform duration-500 will-change-transform group-hover:scale-[1.03]"
+            style={{
+              ...imageStyle,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold leading-snug text-foreground line-clamp-2 group-hover:text-primary">
             {item.title}
@@ -256,9 +298,26 @@ function ArticleRow({
   locale: string
 }) {
   const ctaLabel = item.symbol ? convertToEnglishNumbers(item.symbol) : locale === "ar" ? "عرض" : "Open"
+  const imageStyle = item.image
+    ? {
+        backgroundImage: `linear-gradient(180deg, rgba(6,17,11,0) 0%, rgba(6,17,11,0.75) 100%), url(${item.image})`,
+      }
+    : {
+        backgroundImage: "linear-gradient(180deg, rgba(28,58,38,0.25) 0%, rgba(6,17,11,0.8) 100%)",
+      }
   return (
-    <article className="flex flex-col gap-2 rounded-2xl border border-white/30 bg-white/70 p-4 shadow-[0_12px_45px_rgba(15,23,42,0.1)] transition-colors duration-150 hover:border-primary/40 hover:bg-white/85 dark:border-white/10 dark:bg-background/70 dark:hover:border-primary/50">
-      <div className="flex flex-col gap-1">
+    <article className="flex flex-col gap-3 rounded-2xl border border-white/30 bg-white/70 p-4 shadow-[0_12px_45px_rgba(15,23,42,0.1)] transition-colors duration-150 hover:border-primary/40 hover:bg-white/85 dark:border-white/10 dark:bg-background/70 dark:hover:border-primary/50 sm:flex-row sm:items-center sm:gap-4">
+      <div className="hidden h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/20 shadow-inner sm:block dark:border-white/10">
+        <div
+          className="h-full w-full"
+          style={{
+            ...imageStyle,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      </div>
+      <div className="flex flex-1 flex-col gap-1">
         <h4 className="text-sm font-semibold text-foreground line-clamp-2">{item.title}</h4>
         {item.text && <p className="text-xs text-muted-foreground line-clamp-2">{item.text}</p>}
       </div>
