@@ -6,8 +6,8 @@ import Link from "next/link"
 import { ArrowUpRight, BarChart2 } from "lucide-react"
 import EconomicCalendarWidget from "@/components/economic-calendar-widget"
 import { MarketOverviewCard } from "@/components/dashboard/market-overview-card"
-import { ExchangeRatesPanel } from "@/components/dashboard/exchange-rates"
 import { HomeNewsRail } from "@/components/dashboard/home-news"
+import PriceBoard from "@/components/PriceBoard"
 import { useLocale } from "@/hooks/use-locale"
 
 const heroMetrics = [
@@ -102,6 +102,9 @@ export default function Dashboard() {
         </div>
       </section>
 
+      {/* Price Board */}
+      <PriceBoard />
+
       {/* Calendar */}
       <section className="space-y-6 rounded-[36px] border border-white/60 bg-white/90 p-6 shadow-[0_32px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-background/75 dark:shadow-[0_30px_90px_rgba(2,6,23,0.65)] md:p-8">
         <div className="flex flex-col gap-4 border-b border-white/60 pb-6 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
@@ -126,14 +129,11 @@ export default function Dashboard() {
       </section>
 
       {/* Market + News */}
-      <section className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <section className="grid gap-8 lg:grid-cols-2">
         <div className="rounded-[32px] border border-white/60 bg-white/90 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.1)] backdrop-blur-lg dark:border-white/10 dark:bg-background/75 dark:shadow-[0_24px_70px_rgba(2,6,23,0.6)]">
           <MarketOverviewCard />
         </div>
-        <div className="space-y-6">
-          <ExchangeRatesPanel />
-          <HomeNewsRail />
-        </div>
+        <HomeNewsRail />
       </section>
     </div>
   )

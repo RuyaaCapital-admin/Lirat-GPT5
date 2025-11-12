@@ -1,15 +1,108 @@
 "use client"
 
-import { memo, useEffect, useRef, useState } from "react"
+import { memo, useEffect, useMemo, useRef, useState } from "react"
 import { useLocale } from "@/hooks/use-locale"
+
+type ChatRole = "assistant" | "user"
+
+interface ChatMessage {
+  id: string
+  role: ChatRole
+  content: string
+}
+
+const TEXT = {
+  loading: {
+    en: "Loading calendar...",
+    ar: "جاري تحميل التقويم...",
+  },
+  reset: {
+    en: "Back to Today",
+    ar: "العودة لليوم",
+  },
+  refresh: {
+    en: "Refresh Feed",
+    ar: "تحديث البيانات",
+  },
+  header: {
+    en: "Liirat Insight",
+    ar: "مساعد ليرات",
+  },
+  chatGreeting: {
+    en: "Hi! Ask me about today's releases or weekly outlooks and I'll translate them into actionable insights.",
+    ar: "مرحباً! اسألني عن بيانات اليوم أو نظرة الأسبوع وسأقدم لك ملخصاً وتحليلاً سريعاً.",
+  },
+  chatPlaceholder: {
+    en: "Ask about an event or currency impact…",
+    ar: "اسأل عن حدث أو تأثيره على العملات...",
+  },
+  chatTyping: {
+    en: "Analysing latest data…",
+    ar: "جاري تحليل البيانات...",
+  },
+}
+
+function buildAssistantResponse(locale: "en" | "ar", prompt: string): string {
+  const lower = prompt.toLowerCase()
+
+  if (lower.includes("cpi") || lower.includes("inflation") || lower.includes("معدل")) {
+    return locale === "ar"
+      ? "تقارير التضخم غالباً ما تحرك توقعات أسعار الفائدة. زيادة القراءة تدعم عادة قوة العملة لأنها ترفع احتمالية التشديد النقدي، بينما قراءة أضعف قد تضعف العملة مع توقعات خفض الفائدة."
+      : "Inflation releases recalibrate rate expectations. A hotter read typically supports the currency through tighter policy bets, while a softer print pressures it as rate cuts move back in play."
+  }
+
+  if (lower.includes("fed") || lower.includes("fomc") || lower.includes("الفيدرالي")) {
+    return locale === "ar"
+      ? "قرارات الفيدرالي تؤثر على كل الأصول الحساسة للدولار. راقب النبرة حول التضخم والنمو؛ أي إشارة للتشديد تدفع عوائد السندات صعوداً وتضغط على الذهب والعملات المرتبطة بالدولار."
+      : "FOMC language drives every USD-sensitive asset. Watch their tone on inflation and growth; a hawkish tilt props up Treasury yields and weighs on gold and high-beta FX."
+  }
+
+  if (lower.includes("gold") || lower.includes("xau") || lower.includes("ذهب")) {
+    return locale === "ar"
+      ? "الذهب يستجيب لتوقعات الفائدة وحركة الدولار. يُنصح بمراقبة عوائد السندات الحقيقية وحركة USD/TRY إذا كنت تقيّم الذهب بالليرة التركية."
+      : "Gold trades inverse to real yields and dollar momentum. Track real Treasury yields plus USD/TRY if you're pricing Turkish lira benchmarks."
+  }
+
+  if (lower.includes("weekly") || lower.includes("week") || lower.includes("الأسبوع")) {
+    return locale === "ar"
+      ? "لنظرة أسبوعية متوازنة، اجمع بين البيانات الرائدة (مؤشرات مديري المشتريات، مبيعات التجزئة) وقرارات البنوك المركزية. تأكد من إعادة ضبط التقويم إلى 'اليوم' بعد المتابعة الأسبوعية لتجنب تفويت الإصدارات عالية التأثير."
+      : "For a weekly view, blend forward-looking prints (PMIs, retail sales) with central-bank speeches. Remember to reset the calendar to 'Today' after scanning the week so high-impact releases stay front-and-center."
+  }
+
+  if (lower.includes("impact") || lower.includes("تأثير") || lower.includes("market")) {
+    return locale === "ar"
+      ? "اعرف قوة التأثير من خلال رمز اللون في التقويم: اللون الداكن يشير لأحداث عالية المخاطر. راقب تقارير نفس القطاع المتتالية، فالتأثير يتضاعف عندما تتقاطع البيانات مع اتجاه السياسة النقدية."
+      : "Gauge impact via the calendar's color coding—darker bands mean heavier volatility. Clustered events in the same sector amplify moves, especially when they align with the prevailing policy narrative."
+  }
+
+  return locale === "ar"
+    ? "اطرح أي سؤال حول حدث اقتصادي، دولة معينة، أو تأثير محتمل على العملات والسلع وسأقدم لك تلخيصاً فورياً."
+    : "Feel free to ask about any economic release, currency, or asset-class impact and I'll surface a concise take within a couple of seconds."
+}
 
 function EconomicCalendarWidgetComponent() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const scriptLoadedRef = useRef(false)
-  const [isReady, setIsReady] = useState(false)
-  const { locale } = useLocale()
+  const chatBodyRef = useRef<HTMLDivElement | null>(null)
 
-  const widgetLanguage = locale === "ar" ? "ar" : "en"
+  const { locale } = useLocale()
+  const language = locale === "ar" ? "ar" : "en"
+
+  const [isReady, setIsReady] = useState(false)
+  const [resetSignal, setResetSignal] = useState(0)
+  const [reloadSignal, setReloadSignal] = useState(0)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [chatInput, setChatInput] = useState("")
+  const [chatLoading, setChatLoading] = useState(false)
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    {
+      id: "welcome",
+      role: "assistant",
+      content: TEXT.chatGreeting[language],
+    },
+  ])
+
+  const widgetLanguage = language
 
   useEffect(() => {
     const root = containerRef.current
@@ -59,12 +152,12 @@ function EconomicCalendarWidgetComponent() {
           const iframe = target.querySelector("iframe")
           if (iframe && iframe.contentWindow) {
             setIsReady(true)
-          } else if (performance.now() - start < 2500) {
+          } else if (performance.now() - start < 3000) {
             requestAnimationFrame(tick)
           } else if (!retried) {
             retried = true
             root.innerHTML = ""
-            setTimeout(mount, 300)
+            window.setTimeout(mount, 320)
           }
         }
         requestAnimationFrame(tick)
@@ -75,7 +168,7 @@ function EconomicCalendarWidgetComponent() {
         if (!retried && !cancelled) {
           retried = true
           root.innerHTML = ""
-          setTimeout(mount, 600)
+          window.setTimeout(mount, 600)
         }
       })
 
@@ -92,47 +185,136 @@ function EconomicCalendarWidgetComponent() {
       }
       scriptLoadedRef.current = false
     }
-  }, [widgetLanguage])
+  }, [widgetLanguage, resetSignal, reloadSignal])
+
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight
+    }
+  }, [messages, chatLoading])
+
+  const handleResetToToday = () => {
+    setResetSignal((value) => value + 1)
+  }
+
+  const handleRefresh = () => {
+    setReloadSignal((value) => value + 1)
+  }
+
+  const handleToggleChat = () => {
+    setChatOpen((prev) => !prev)
+  }
+
+  const assistantDelay = useMemo(() => (language === "ar" ? 900 : 750), [language])
+
+  const handleChatSubmit = (event?: React.FormEvent) => {
+    event?.preventDefault()
+    if (!chatInput.trim() || chatLoading) return
+
+    const userContent = chatInput.trim()
+    const userMessage: ChatMessage = {
+      id: `${Date.now()}-user`,
+      role: "user",
+      content: userContent,
+    }
+
+    setMessages((prev) => [...prev, userMessage])
+    setChatInput("")
+    setChatLoading(true)
+
+    window.setTimeout(() => {
+      const response: ChatMessage = {
+        id: `${Date.now()}-assistant`,
+        role: "assistant",
+        content: buildAssistantResponse(language, userContent),
+      }
+      setMessages((prev) => [...prev, response])
+      setChatLoading(false)
+    }, assistantDelay + Math.random() * 400)
+  }
 
   return (
-    <div className="calendar-wrapper">
+    <div className="calendar-wrapper" dir={language === "ar" ? "rtl" : "ltr"} data-ready={isReady}>
+      <div className="calendar-controls">
+        <div className="calendar-controls__status" aria-live="polite">
+          <span className="status-dot" />
+          <span>{isReady ? (language === "ar" ? "متصل بالبيانات الحية" : "Live macro feed online") : TEXT.loading[language]}</span>
+        </div>
+        <div className="calendar-controls__actions">
+          <button type="button" onClick={handleResetToToday} className="control-button">
+            {TEXT.reset[language]}
+          </button>
+          <button type="button" onClick={handleRefresh} className="control-button control-button--ghost">
+            {TEXT.refresh[language]}
+          </button>
+        </div>
+      </div>
+
       {!isReady && (
         <div className="calendar-loading">
-          <div className="loading-spinner"></div>
-          <p>{locale === "ar" ? "جاري تحميل التقويم..." : "Loading calendar..."}</p>
+          <div className="loading-spinner" />
+          <p>{TEXT.loading[language]}</p>
         </div>
       )}
 
-      <div ref={containerRef} className="calendar-inner" style={{ opacity: isReady ? 1 : 0 }}></div>
+      <div ref={containerRef} className="calendar-inner" style={{ opacity: isReady ? 1 : 0 }} />
 
-      <div
-        className="bottom-blocker"
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          return false
-        }}
-        onMouseDown={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          return false
-        }}
-        onTouchStart={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          return false
-        }}
-        onContextMenu={(event) => {
-          event.preventDefault()
-          return false
-        }}
-      >
-        <div className="liirat-branding">
-          <span className="brand-icon" role="img" aria-hidden="true">
-            📊
-          </span>
-          Liirat Markets
+      <div className="bottom-blocker" aria-hidden="true">
+        <button
+          type="button"
+          className={`brand-pill${chatOpen ? " brand-pill--active" : ""}`}
+          onClick={handleToggleChat}
+          aria-pressed={chatOpen}
+          aria-expanded={chatOpen}
+          aria-controls="calendar-chat"
+        >
+          <span className="brand-pill__emblem" aria-hidden="true" />
+          <span className="brand-pill__label">{TEXT.header[language]}</span>
+        </button>
+      </div>
+
+      <div id="calendar-chat" className={`calendar-chat${chatOpen ? " calendar-chat--open" : ""}`}>
+        <div className="calendar-chat__header">
+          <div>
+            <span className="calendar-chat__title">{TEXT.header[language]}</span>
+            <span className="calendar-chat__subtitle">
+              {language === "ar" ? "تحليلات فورية لبيانات الاقتصاد" : "Instant context for macro releases"}
+            </span>
+          </div>
+          <button type="button" className="calendar-chat__close" onClick={handleToggleChat} aria-label="Close assistant">
+            <span aria-hidden="true">×</span>
+          </button>
         </div>
+        <div className="calendar-chat__body" ref={chatBodyRef}>
+          {messages.map((message) => (
+            <div key={message.id} className={`chat-message chat-message--${message.role}`}>
+              <div className="chat-message__bubble">{message.content}</div>
+            </div>
+          ))}
+          {chatLoading && (
+            <div className="chat-message chat-message--assistant">
+              <div className="chat-message__bubble chat-message__bubble--typing">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="chat-message__hint">{TEXT.chatTyping[language]}</div>
+            </div>
+          )}
+        </div>
+        <form className="calendar-chat__form" onSubmit={handleChatSubmit}>
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(event) => setChatInput(event.target.value)}
+            placeholder={TEXT.chatPlaceholder[language]}
+            disabled={chatLoading}
+            className="calendar-chat__input"
+          />
+          <button type="submit" className="calendar-chat__submit" disabled={chatLoading || !chatInput.trim()}>
+            <span>{language === "ar" ? "إرسال" : "Send"}</span>
+          </button>
+        </form>
       </div>
 
       <style>{`
@@ -140,14 +322,109 @@ function EconomicCalendarWidgetComponent() {
           position: relative;
           width: 100%;
           max-width: 100%;
-          min-height: 800px;
+          min-height: 820px;
           height: auto;
-          background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(242, 248, 244, 0.92));
-          border-radius: 30px;
-          border: 1px solid rgba(209, 223, 216, 0.7);
-          box-shadow: 0 28px 80px rgba(45, 64, 52, 0.12);
+          background: linear-gradient(180deg, rgba(250, 252, 250, 0.98), rgba(233, 243, 236, 0.94));
+          border-radius: 32px;
+          border: 1px solid rgba(192, 214, 202, 0.6);
+          box-shadow: 0 28px 80px rgba(26, 46, 31, 0.16);
           overflow: hidden;
           box-sizing: border-box;
+        }
+
+        [data-theme="dark"] .calendar-wrapper,
+        .dark .calendar-wrapper {
+          background: linear-gradient(185deg, rgba(9, 16, 15, 0.94), rgba(12, 22, 18, 0.88));
+          border-color: rgba(70, 120, 86, 0.35);
+          box-shadow: 0 30px 90px rgba(2, 6, 23, 0.65);
+        }
+
+        .calendar-controls {
+          position: absolute;
+          inset-inline: clamp(18px, 4vw, 32px);
+          top: clamp(18px, 3vw, 32px);
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          z-index: 20;
+          pointer-events: none;
+        }
+
+        .calendar-controls__status {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid rgba(192, 214, 202, 0.6);
+          box-shadow: 0 12px 40px rgba(26, 46, 31, 0.12);
+          font-size: 0.78rem;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          color: rgba(22, 46, 28, 0.75);
+          pointer-events: auto;
+        }
+
+        [data-theme="dark"] .calendar-controls__status,
+        .dark .calendar-controls__status {
+          background: rgba(15, 24, 20, 0.8);
+          border-color: rgba(70, 120, 86, 0.4);
+          color: rgba(200, 240, 220, 0.82);
+        }
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(57, 179, 107, 0.9);
+          box-shadow: 0 0 12px rgba(57, 179, 107, 0.6);
+        }
+
+        .calendar-controls__actions {
+          display: flex;
+          gap: 10px;
+          pointer-events: auto;
+        }
+
+        .control-button {
+          position: relative;
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-size: 0.82rem;
+          font-weight: 600;
+          letter-spacing: 0.02em;
+          color: rgba(14, 43, 24, 0.88);
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(233, 245, 238, 0.92));
+          border: 1px solid rgba(192, 214, 202, 0.7);
+          box-shadow: 0 18px 36px rgba(26, 46, 31, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+          transition: transform 160ms ease, box-shadow 200ms ease, border-color 160ms ease;
+        }
+
+        .control-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 42px rgba(26, 46, 31, 0.22);
+          border-color: rgba(57, 179, 107, 0.55);
+        }
+
+        .control-button:active {
+          transform: translateY(0);
+        }
+
+        .control-button--ghost {
+          background: rgba(255, 255, 255, 0.6);
+          border-color: rgba(192, 214, 202, 0.5);
+          color: rgba(24, 62, 36, 0.72);
+        }
+
+        [data-theme="dark"] .control-button,
+        .dark .control-button {
+          background: linear-gradient(135deg, rgba(16, 33, 25, 0.88), rgba(12, 27, 21, 0.92));
+          border-color: rgba(70, 120, 86, 0.45);
+          color: rgba(214, 244, 226, 0.92);
+          box-shadow: 0 18px 40px rgba(4, 12, 9, 0.45);
         }
 
         .calendar-loading {
@@ -156,23 +433,30 @@ function EconomicCalendarWidgetComponent() {
           left: 50%;
           transform: translate(-50%, -50%);
           text-align: center;
-          z-index: 100;
-          background: rgba(255, 255, 255, 0.65);
-          backdrop-filter: blur(12px);
-          padding: 32px 40px;
+          z-index: 10;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(14px);
+          padding: 34px 44px;
           border-radius: 24px;
-          border: 1px solid rgba(209, 223, 216, 0.6);
-          box-shadow: 0 18px 48px rgba(45, 64, 52, 0.18);
+          border: 1px solid rgba(209, 223, 216, 0.55);
+          box-shadow: 0 20px 50px rgba(26, 46, 31, 0.22);
+        }
+
+        [data-theme="dark"] .calendar-loading,
+        .dark .calendar-loading {
+          background: rgba(12, 20, 18, 0.82);
+          border-color: rgba(70, 120, 86, 0.45);
+          color: rgba(214, 244, 226, 0.92);
         }
 
         .loading-spinner {
           width: 36px;
           height: 36px;
           margin: 0 auto 14px;
-          border: 3px solid rgba(57, 179, 107, 0.15);
-          border-top: 3px solid rgba(57, 179, 107, 0.85);
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          border: 3px solid rgba(57, 179, 107, 0.18);
+          border-top: 3px solid rgba(57, 179, 107, 0.92);
+          animation: spin 0.9s linear infinite;
         }
 
         @keyframes spin {
@@ -181,9 +465,15 @@ function EconomicCalendarWidgetComponent() {
         }
 
         .calendar-loading p {
-          color: rgba(45, 64, 52, 0.65);
+          color: rgba(24, 68, 38, 0.76);
           font-size: 0.85rem;
           font-weight: 600;
+          letter-spacing: 0.04em;
+        }
+
+        [data-theme="dark"] .calendar-loading p,
+        .dark .calendar-loading p {
+          color: rgba(214, 244, 226, 0.86);
         }
 
         .calendar-inner {
@@ -191,13 +481,19 @@ function EconomicCalendarWidgetComponent() {
           width: 100%;
           max-width: 100%;
           height: 100%;
-          min-height: 800px;
+          min-height: 820px;
           box-sizing: border-box;
           transition: opacity 0.3s ease;
-          border-radius: 26px;
-          background: rgba(255, 255, 255, 0.98);
-          border: 1px solid rgba(209, 223, 216, 0.55);
+          border-radius: 28px;
+          background: rgba(255, 255, 255, 0.95);
+          border: 1px solid rgba(209, 223, 216, 0.5);
           overflow: hidden;
+        }
+
+        [data-theme="dark"] .calendar-inner,
+        .dark .calendar-inner {
+          background: rgba(12, 22, 18, 0.92);
+          border-color: rgba(70, 120, 86, 0.35);
         }
 
         .calendar-inner::before {
@@ -205,15 +501,14 @@ function EconomicCalendarWidgetComponent() {
           position: absolute;
           inset: 0;
           pointer-events: none;
-          background: linear-gradient(180deg, rgba(242, 248, 244, 0.16), rgba(255, 255, 255, 0.02));
-          opacity: 0.35;
+          background: linear-gradient(140deg, rgba(233, 245, 238, 0.18), rgba(255, 255, 255, 0.05));
         }
 
         #economicCalendarWidget {
           width: 100% !important;
           max-width: 100% !important;
           height: 100% !important;
-          min-height: 800px !important;
+          min-height: 820px !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
         }
@@ -221,118 +516,20 @@ function EconomicCalendarWidgetComponent() {
         #economicCalendarWidget iframe {
           width: 100% !important;
           max-width: 100% !important;
-          height: 800px !important;
-          min-height: 800px !important;
+          height: 820px !important;
+          min-height: 820px !important;
           border: none !important;
           box-sizing: border-box !important;
           border-radius: 24px !important;
           overflow: hidden !important;
         }
 
-        .calendar-wrapper .ecw-copyright,
-        .calendar-wrapper .ecw-copyright *,
-        .calendar-inner .ecw-copyright,
-        .calendar-inner .ecw-copyright * {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          height: 0 !important;
-          width: 0 !important;
-          overflow: hidden !important;
-          position: absolute !important;
-          left: -9999px !important;
-        }
-
-        .calendar-wrapper a,
-        .calendar-inner a {
-          pointer-events: none !important;
-          cursor: default !important;
-          user-select: none !important;
-        }
-
-        .bottom-blocker {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 110px;
-          background: linear-gradient(to top,
-            rgba(242, 248, 244, 0.98) 0%,
-            rgba(242, 248, 244, 0.82) 55%,
-            rgba(242, 248, 244, 0.58) 80%,
-            rgba(242, 248, 244, 0) 100%
-          );
-          z-index: 10000;
-          pointer-events: auto !important;
-          cursor: default !important;
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          padding-bottom: 18px;
-          user-select: none;
-          touch-action: none;
-          -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
-        }
-
-        .bottom-blocker::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: linear-gradient(to top, rgba(242, 248, 244, 0.96), transparent 70%);
-          pointer-events: none;
-        }
-
-        .bottom-blocker::after {
-          content: "";
-          position: absolute;
-          bottom: 14px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 170px;
-          height: 54px;
-          background-image: url("/images/liirat-logo.png");
-          background-size: contain;
-          background-repeat: no-repeat;
-          background-position: center;
-          opacity: 0.45;
-          pointer-events: none;
-          filter: saturate(0.8);
-        }
-
-        .liirat-branding {
-          font-family: 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          font-size: 15px;
-          font-weight: 700;
-          color: rgba(45, 64, 52, 0.8);
-          text-align: center;
-          letter-spacing: 0.5px;
-          pointer-events: none;
-          text-shadow: 0 10px 30px rgba(45, 64, 52, 0.18);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(255, 255, 255, 0.94);
-          padding: 9px 22px;
-          border-radius: 9999px;
-          border: 1px solid rgba(209, 223, 216, 0.6);
-          box-shadow:
-            0 16px 40px rgba(45, 64, 52, 0.12),
-            inset 0 1px 0 rgba(255, 255, 255, 0.65);
-        }
-
-        .brand-icon {
-          font-size: 17px;
-          filter: drop-shadow(0 6px 12px rgba(45, 64, 52, 0.25));
-        }
-
-        .calendar-wrapper *[class*="copyright"],
-        .calendar-wrapper *[class*="brand"],
-        .calendar-wrapper *[class*="logo"],
-        .calendar-wrapper *[class*="footer"],
-        .calendar-wrapper *[href*="mql5"],
-        .calendar-wrapper *[href*="tradays"] {
+        .calendar-wrapper [class*="copyright"],
+        .calendar-wrapper [class*="brand"],
+        .calendar-wrapper [class*="logo"],
+        .calendar-wrapper [class*="footer"],
+        .calendar-wrapper [href*="mql5"],
+        .calendar-wrapper [href*="tradays"] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -353,95 +550,419 @@ function EconomicCalendarWidgetComponent() {
           overflow-x: hidden !important;
         }
 
+        .bottom-blocker {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 122px;
+          background: linear-gradient(
+            to top,
+            rgba(250, 252, 250, 0.98) 0%,
+            rgba(236, 244, 238, 0.88) 55%,
+            rgba(236, 244, 238, 0.42) 85%,
+            rgba(236, 244, 238, 0) 100%
+          );
+          z-index: 15;
+          display: flex;
+          justify-content: center;
+          align-items: flex-end;
+          pointer-events: none;
+        }
+
+        [data-theme="dark"] .bottom-blocker,
+        .dark .bottom-blocker {
+          background: linear-gradient(
+            to top,
+            rgba(10, 17, 14, 0.96) 0%,
+            rgba(11, 20, 16, 0.82) 55%,
+            rgba(11, 20, 16, 0.45) 85%,
+            rgba(11, 20, 16, 0) 100%
+          );
+        }
+
+        .brand-pill {
+          pointer-events: auto;
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          padding: 14px 22px;
+          border-radius: 999px;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 243, 0.94));
+          border: 1px solid rgba(192, 214, 202, 0.7);
+          box-shadow:
+            0 22px 60px rgba(26, 46, 31, 0.18),
+            inset 0 1px 0 rgba(255, 255, 255, 0.7);
+          color: rgba(24, 62, 36, 0.9);
+          font-size: 0.9rem;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          transition: transform 180ms ease, box-shadow 220ms ease, border-color 180ms ease;
+        }
+
+        .brand-pill:hover {
+          transform: translateY(-3px) scale(1.015);
+          box-shadow:
+            0 26px 70px rgba(26, 46, 31, 0.22),
+            inset 0 1px 0 rgba(255, 255, 255, 0.75);
+          border-color: rgba(57, 179, 107, 0.5);
+        }
+
+        .brand-pill--active {
+          background: linear-gradient(135deg, rgba(57, 179, 107, 0.12), rgba(233, 243, 236, 0.92));
+          border-color: rgba(57, 179, 107, 0.55);
+          box-shadow:
+            0 28px 72px rgba(57, 179, 107, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="dark"] .brand-pill,
+        .dark .brand-pill {
+          background: linear-gradient(135deg, rgba(12, 26, 20, 0.92), rgba(18, 32, 26, 0.9));
+          border-color: rgba(70, 120, 86, 0.45);
+          color: rgba(214, 244, 226, 0.92);
+          box-shadow: 0 24px 60px rgba(2, 12, 7, 0.55);
+        }
+
+        .brand-pill__emblem {
+          width: 42px;
+          height: 42px;
+          border-radius: 16px;
+          background-image: url("/liirat-logo.png");
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          box-shadow: 0 0 18px rgba(57, 179, 107, 0.35);
+        }
+
+        .brand-pill__label {
+          text-transform: uppercase;
+          font-size: 0.74rem;
+          letter-spacing: 0.38em;
+        }
+
+        .calendar-chat {
+          position: absolute;
+          bottom: 136px;
+          inset-inline-end: clamp(18px, 4vw, 36px);
+          width: min(420px, calc(100% - 32px));
+          max-height: 460px;
+          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.96);
+          border: 1px solid rgba(192, 214, 202, 0.6);
+          box-shadow: 0 32px 90px rgba(26, 46, 31, 0.25);
+          display: flex;
+          flex-direction: column;
+          opacity: 0;
+          transform: translateY(12px) scale(0.97);
+          pointer-events: none;
+          transition: opacity 200ms ease, transform 200ms ease;
+          z-index: 25;
+        }
+
+        [dir="rtl"] .calendar-chat {
+          inset-inline-start: clamp(18px, 4vw, 36px);
+          inset-inline-end: auto;
+        }
+
+        [data-theme="dark"] .calendar-chat,
+        .dark .calendar-chat {
+          background: rgba(10, 18, 15, 0.94);
+          border-color: rgba(70, 120, 86, 0.45);
+          box-shadow: 0 34px 90px rgba(2, 12, 7, 0.6);
+        }
+
+        .calendar-chat--open {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          pointer-events: auto;
+        }
+
+        .calendar-chat__header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 18px 22px;
+          border-bottom: 1px solid rgba(192, 214, 202, 0.45);
+        }
+
+        .calendar-chat__title {
+          font-weight: 700;
+          font-size: 1rem;
+          letter-spacing: 0.05em;
+          color: rgba(24, 62, 36, 0.92);
+        }
+
+        .calendar-chat__subtitle {
+          display: block;
+          margin-top: 2px;
+          font-size: 0.72rem;
+          color: rgba(24, 62, 36, 0.62);
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        [data-theme="dark"] .calendar-chat__title,
+        [data-theme="dark"] .calendar-chat__subtitle,
+        .dark .calendar-chat__title,
+        .dark .calendar-chat__subtitle {
+          color: rgba(214, 244, 226, 0.88);
+        }
+
+        .calendar-chat__close {
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          border: 1px solid rgba(192, 214, 202, 0.55);
+          background: rgba(255, 255, 255, 0.8);
+          color: rgba(24, 62, 36, 0.8);
+          font-size: 1.2rem;
+          line-height: 1;
+          display: grid;
+          place-items: center;
+          transition: transform 160ms ease, background 160ms ease;
+        }
+
+        .calendar-chat__close:hover {
+          transform: rotate(6deg) scale(1.08);
+          background: rgba(57, 179, 107, 0.16);
+          border-color: rgba(57, 179, 107, 0.4);
+        }
+
+        .calendar-chat__body {
+          flex: 1;
+          overflow-y: auto;
+          padding: 20px 22px;
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+
+        .calendar-chat__body::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .calendar-chat__body::-webkit-scrollbar-thumb {
+          background: rgba(57, 179, 107, 0.35);
+          border-radius: 999px;
+        }
+
+        .chat-message {
+          display: flex;
+          gap: 14px;
+          align-items: flex-start;
+        }
+
+        .chat-message--assistant {
+          flex-direction: row;
+        }
+
+        .chat-message--user {
+          flex-direction: row-reverse;
+        }
+
+        .chat-message__bubble {
+          max-width: 100%;
+          padding: 12px 14px;
+          border-radius: 16px;
+          font-size: 0.86rem;
+          line-height: 1.6;
+          box-shadow: 0 12px 28px rgba(26, 46, 31, 0.16);
+        }
+
+        .chat-message--assistant .chat-message__bubble {
+          background: linear-gradient(135deg, rgba(233, 245, 238, 0.92), rgba(255, 255, 255, 0.92));
+          border: 1px solid rgba(192, 214, 202, 0.55);
+          color: rgba(28, 58, 38, 0.9);
+        }
+
+        .chat-message--user .chat-message__bubble {
+          background: linear-gradient(135deg, rgba(57, 179, 107, 0.92), rgba(45, 162, 96, 0.92));
+          border: 1px solid rgba(57, 179, 107, 0.75);
+          color: rgba(255, 255, 255, 0.96);
+        }
+
+        [data-theme="dark"] .chat-message__bubble,
+        .dark .chat-message__bubble {
+          box-shadow: 0 16px 34px rgba(2, 12, 7, 0.55);
+        }
+
+        .chat-message__bubble--typing {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .chat-message__bubble--typing span {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(57, 179, 107, 0.8);
+          animation: typingBounce 1s infinite ease-in-out;
+        }
+
+        .chat-message__bubble--typing span:nth-child(2) {
+          animation-delay: 0.15s;
+        }
+
+        .chat-message__bubble--typing span:nth-child(3) {
+          animation-delay: 0.3s;
+        }
+
+        @keyframes typingBounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+          40% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        .chat-message__hint {
+          font-size: 0.7rem;
+          color: rgba(57, 179, 107, 0.66);
+          margin-top: 4px;
+          letter-spacing: 0.06em;
+        }
+
+        .calendar-chat__form {
+          padding: 16px 18px;
+          border-top: 1px solid rgba(192, 214, 202, 0.45);
+          display: flex;
+          gap: 12px;
+          align-items: center;
+        }
+
+        .calendar-chat__input {
+          flex: 1;
+          border-radius: 18px;
+          border: 1px solid rgba(192, 214, 202, 0.6);
+          background: rgba(255, 255, 255, 0.9);
+          padding: 12px 16px;
+          font-size: 0.85rem;
+          color: rgba(24, 62, 36, 0.9);
+          transition: border-color 160ms ease, box-shadow 160ms ease;
+        }
+
+        .calendar-chat__input:focus {
+          outline: none;
+          border-color: rgba(57, 179, 107, 0.6);
+          box-shadow: 0 0 0 3px rgba(57, 179, 107, 0.16);
+        }
+
+        .calendar-chat__submit {
+          padding: 12px 18px;
+          border-radius: 16px;
+          border: none;
+          font-size: 0.82rem;
+          font-weight: 600;
+          background: linear-gradient(135deg, rgba(57, 179, 107, 0.92), rgba(45, 162, 96, 0.92));
+          color: rgba(255, 255, 255, 0.95);
+          box-shadow: 0 16px 30px rgba(57, 179, 107, 0.24);
+          transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+        }
+
+        .calendar-chat__submit:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
+        }
+
+        .calendar-chat__submit:not(:disabled):hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 36px rgba(57, 179, 107, 0.3);
+        }
+
+        @media (max-width: 992px) {
+          .calendar-wrapper {
+            min-height: 760px;
+          }
+
+          .calendar-inner,
+          #economicCalendarWidget,
+          #economicCalendarWidget iframe {
+            min-height: 760px !important;
+            height: 760px !important;
+          }
+        }
+
         @media (max-width: 768px) {
           .calendar-wrapper {
-            min-height: 700px;
+            border-radius: 28px;
+            min-height: 680px;
           }
-          .calendar-inner {
-            min-height: 700px;
+
+          .calendar-controls {
+            inset-inline: 18px;
+            top: 18px;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
           }
-          #economicCalendarWidget {
-            min-height: 700px !important;
+
+          .calendar-controls__actions {
+            justify-content: flex-start;
           }
+
+          .calendar-inner,
+          #economicCalendarWidget,
           #economicCalendarWidget iframe {
-            height: 700px !important;
-            min-height: 700px !important;
+            min-height: 680px !important;
+            height: 680px !important;
           }
-          .bottom-blocker {
-            height: 98px;
-            padding-bottom: 14px;
-          }
-          .liirat-branding {
-            font-size: 14px;
-            padding: 7px 18px;
-          }
-          .brand-icon {
-            font-size: 16px;
+
+          .calendar-chat {
+            width: calc(100% - 36px);
+            inset-inline: 18px;
           }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 576px) {
           .calendar-wrapper {
-            min-height: 600px;
+            min-height: 640px;
           }
-          .calendar-inner {
-            min-height: 600px;
+
+          .calendar-controls__status {
+            justify-content: center;
           }
-          #economicCalendarWidget {
-            min-height: 600px !important;
+
+          .control-button,
+          .control-button--ghost {
+            flex: 1;
+            text-align: center;
           }
-          #economicCalendarWidget iframe {
-            height: 600px !important;
-            min-height: 600px !important;
+
+          .calendar-chat {
+            bottom: 110px;
+            max-height: 400px;
           }
         }
 
-        @media (prefers-color-scheme: dark) {
+        @media (max-width: 430px) {
           .calendar-wrapper {
-            background: linear-gradient(165deg, rgba(12, 18, 30, 0.9), rgba(24, 34, 46, 0.88));
-            border: 1px solid rgba(76, 116, 92, 0.3);
-            box-shadow: 0 30px 90px rgba(2, 6, 23, 0.65);
+            min-height: 620px;
           }
 
-          .calendar-inner {
-            background: rgba(14, 21, 32, 0.92);
-            border-color: rgba(76, 116, 92, 0.25);
-          }
-
-          .calendar-inner::before {
-            background: radial-gradient(circle at 20% 20%, rgba(18, 32, 44, 0.55), transparent 65%);
-            opacity: 0.55;
-          }
-
+          .calendar-inner,
+          #economicCalendarWidget,
           #economicCalendarWidget iframe {
-            border-radius: 24px !important;
+            min-height: 620px !important;
+            height: 620px !important;
           }
 
-          .bottom-blocker {
-            background: linear-gradient(to top,
-              rgba(10, 18, 28, 0.96) 0%,
-              rgba(10, 18, 28, 0.82) 55%,
-              rgba(10, 18, 28, 0.48) 80%,
-              rgba(10, 18, 28, 0) 100%
-            );
+          .brand-pill {
+            width: calc(100% - 36px);
+            justify-content: center;
           }
 
-          .bottom-blocker::after {
-            opacity: 0.35;
-            filter: brightness(1.2);
+          .brand-pill__label {
+            font-size: 0.68rem;
+            letter-spacing: 0.28em;
           }
 
-          .liirat-branding {
-            background: rgba(19, 28, 41, 0.9);
-            border-color: rgba(76, 116, 92, 0.4);
-            color: rgba(218, 236, 227, 0.9);
-            text-shadow: 0 8px 20px rgba(2, 6, 23, 0.6);
+          .calendar-chat {
+            width: calc(100% - 36px);
+            inset-inline: 18px;
           }
-        }
-
-        .dark .calendar-loading {
-          background: rgba(12, 20, 30, 0.75);
-          border-color: rgba(76, 116, 92, 0.35);
         }
       `}</style>
     </div>
