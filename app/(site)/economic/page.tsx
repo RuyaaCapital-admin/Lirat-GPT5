@@ -7,12 +7,14 @@ import { CountryFlag } from "@/components/country-flag"
 import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
-import { convertUTCToLocalTime, convertUTCToLocalTimeArabic, getUserTimezoneAbbr } from "@/lib/timezone"
-import { Clock, Globe, TrendingUp } from "lucide-react"
+import { getUserTimezoneAbbr } from "@/lib/timezone"
+import { Clock, Globe, TrendingUp, RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 
 export default function EconomicPage() {
   const [data, setData] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { locale } = useLocale()
   const [timezone, setTimezone] = useState("")
 
@@ -22,19 +24,26 @@ export default function EconomicPage() {
 
   const fetchData = async () => {
     setLoading(true)
+    setError(null)
     try {
+      console.log("[v0] Fetching economic calendar data...")
       const response = await fetch("/api/fmp/economic-calendar", { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
-        console.log("[v0] Economic calendar data:", result.items)
+        console.log("[v0] Economic calendar data received:", result.count, "items")
         setData(result.items || [])
+        if (result.error) {
+          setError(result.error)
+        }
       } else {
-        console.error("Failed to fetch economic data:", response.status)
+        console.error("[v0] Economic calendar fetch failed with status:", response.status)
         setData([])
+        setError("Failed to fetch data")
       }
     } catch (error) {
-      console.error("Failed to fetch economic data:", error)
+      console.error("[v0] Economic calendar error:", error)
       setData([])
+      setError("Error fetching economic calendar")
     } finally {
       setLoading(false)
     }
@@ -42,6 +51,8 @@ export default function EconomicPage() {
 
   useEffect(() => {
     fetchData()
+    const interval = setInterval(fetchData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
   const getImpactBadge = (impact: string) => {
@@ -58,19 +69,25 @@ export default function EconomicPage() {
     switch (impactLower) {
       case "high":
         return (
-          <Badge variant="destructive" className="text-xs">
+          <Badge variant="destructive" className="text-xs font-semibold">
             {impactText}
           </Badge>
         )
       case "medium":
         return (
-          <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
+          <Badge
+            variant="secondary"
+            className="text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 font-semibold"
+          >
             {impactText}
           </Badge>
         )
       case "low":
         return (
-          <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
+          <Badge
+            variant="secondary"
+            className="text-xs bg-green-500/10 text-green-700 dark:text-green-400 font-semibold"
+          >
             {impactText}
           </Badge>
         )
@@ -83,14 +100,20 @@ export default function EconomicPage() {
     }
   }
 
-  const formatTime = (dateStr: string, timeStr?: string) => {
+  const formatTime = (dateStr: string) => {
     if (!dateStr) return "N/A"
     try {
-      const convertedTime =
-        locale === "ar" ? convertUTCToLocalTimeArabic(dateStr, timeStr) : convertUTCToLocalTime(dateStr, timeStr)
-      return `${convertedTime} ${timezone}`
+      const date = new Date(dateStr)
+      const formatted = date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      })
+      return `${formatted} ${timezone}`
     } catch (error) {
-      console.error("[v0] Time formatting error:", error)
       return dateStr
     }
   }
@@ -106,8 +129,7 @@ export default function EconomicPage() {
       ),
       cell: ({ row }: { row: any }) => {
         const date = row.getValue("date")
-        const time = row.original.time
-        return <div className="font-mono text-sm whitespace-nowrap">{formatTime(date, time)}</div>
+        return <div className="font-mono text-sm whitespace-nowrap">{formatTime(date)}</div>
       },
     },
     {
@@ -121,7 +143,6 @@ export default function EconomicPage() {
       cell: ({ row }: { row: any }) => {
         const country = row.getValue("country") || "N/A"
         const countryName = typeof country === "string" ? country : String(country)
-
         return (
           <div className="flex items-center space-x-2">
             <CountryFlag countryCode={row.original.countryCode} countryName={countryName} size="sm" />
@@ -146,7 +167,11 @@ export default function EconomicPage() {
       header: getTranslation(locale, "actual"),
       cell: ({ row }: { row: any }) => {
         const actual = row.getValue("actual")
-        return <div className="font-mono text-sm">{actual !== null && actual !== undefined ? actual : "N/A"}</div>
+        return (
+          <div className="font-mono text-sm font-semibold">
+            {actual !== null && actual !== undefined ? actual : "N/A"}
+          </div>
+        )
       },
     },
     {
@@ -174,6 +199,19 @@ export default function EconomicPage() {
       },
     },
     {
+      accessorKey: "changePercentage",
+      header: getTranslation(locale, "change"),
+      cell: ({ row }: { row: any }) => {
+        const change = row.getValue("changePercentage")
+        const isPositive = typeof change === "number" && change > 0
+        return (
+          <div className={`font-mono text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
+            {change !== null && change !== undefined ? `${isPositive ? "+" : ""}${change.toFixed(2)}%` : "N/A"}
+          </div>
+        )
+      },
+    },
+    {
       accessorKey: "impact",
       header: () => (
         <div className="flex items-center space-x-1">
@@ -189,7 +227,7 @@ export default function EconomicPage() {
       cell: ({ row }: { row: any }) => (
         <AlertButton
           eventTitle={row.getValue("event") || "Economic Event"}
-          eventTime={row.original.time}
+          eventTime={row.original.date}
           type="economic"
         />
       ),
@@ -206,6 +244,24 @@ export default function EconomicPage() {
             : "Real-time economic events and indicators from major economies worldwide"}
         </p>
       </div>
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+          {error}
+        </div>
+      )}
+
+      {data.length === 0 && !loading && (
+        <div className="text-center py-12 space-y-4">
+          <p className="text-muted-foreground text-lg">
+            {locale === "ar" ? "لا توجد أحداث متاحة الآن" : "No events available at this time"}
+          </p>
+          <Button onClick={fetchData} variant="outline" size="sm" className="mx-auto bg-transparent">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            {locale === "ar" ? "تحديث" : "Refresh"}
+          </Button>
+        </div>
+      )}
 
       <DataTable
         columns={columns}

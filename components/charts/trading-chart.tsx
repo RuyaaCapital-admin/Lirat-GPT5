@@ -83,7 +83,10 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
   }, [])
 
   const initChart = () => {
-    if (!chartContainerRef.current || !createChart || !LineStyle) return
+    if (!chartContainerRef.current || !createChart || !LineStyle) {
+      console.warn("[v0] Missing dependencies for chart initialization")
+      return
+    }
 
     try {
       const chart = createChart(chartContainerRef.current, {
@@ -121,30 +124,44 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
         },
       })
 
-      let candlestickSeries: any
-      try {
-        if (typeof chart.addCandlestickSeries === "function") {
-          candlestickSeries = chart.addCandlestickSeries({
+      let chartSeries: any = null
+
+      if (typeof chart.addCandlestickSeries === "function") {
+        try {
+          chartSeries = chart.addCandlestickSeries({
             upColor: "#16a34a",
             downColor: "#dc2626",
             borderVisible: false,
             wickUpColor: "#16a34a",
             wickDownColor: "#dc2626",
           })
-        } else {
-          throw new Error("addCandlestickSeries not available")
+          console.log("[v0] Candlestick series created successfully")
+        } catch (error) {
+          console.warn("[v0] Candlestick series creation failed:", error)
+          chartSeries = null
         }
-      } catch (candleError) {
-        console.warn("[v0] Candlestick series failed, falling back to line series:", candleError)
-        // Fall back to line chart
-        candlestickSeries = chart.addLineSeries({
-          color: "#3b82f6",
-          lineWidth: 2,
-        })
+      }
+
+      if (!chartSeries && typeof chart.addLineSeries === "function") {
+        try {
+          chartSeries = chart.addLineSeries({
+            color: "#3b82f6",
+            lineWidth: 2,
+          })
+          console.log("[v0] Line series created successfully")
+        } catch (error) {
+          console.error("[v0] Line series creation failed:", error)
+          return
+        }
+      }
+
+      if (!chartSeries) {
+        console.error("[v0] Failed to create any chart series")
+        return
       }
 
       chartRef.current = chart
-      seriesRef.current = candlestickSeries
+      seriesRef.current = chartSeries
 
       // Expose chart API for AI control
       ;(window as any).ChartAPI = {
@@ -170,16 +187,8 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
           onTimeframeChange(newTimeframe)
         },
       }
-
-      return () => {
-        if (chart && typeof chart.remove === "function") {
-          chart.remove()
-        }
-        chartRef.current = null
-        seriesRef.current = null
-      }
     } catch (error) {
-      console.error("Error initializing chart:", error)
+      console.error("[v0] Error initializing chart:", error)
     }
   }
 
@@ -235,8 +244,14 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
 
   useEffect(() => {
     if (chartReady) {
-      const cleanup = initChart()
-      return cleanup
+      initChart()
+      return () => {
+        if (chartRef.current && typeof chartRef.current.remove === "function") {
+          chartRef.current.remove()
+        }
+        chartRef.current = null
+        seriesRef.current = null
+      }
     }
   }, [isDark, chartReady])
 

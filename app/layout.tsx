@@ -14,6 +14,7 @@ const inter = Inter({
 const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
   variable: "--font-arabic",
 })
 
@@ -32,11 +33,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <style>{`
-html {
-  font-family: ${inter.style.fontFamily};
-  --font-sans: ${inter.variable};
-  --font-arabic: ${notoSansArabic.variable};
-}
+          html {
+            --font-sans: ${inter.variable};
+            --font-arabic: ${notoSansArabic.variable};
+          }
+          body {
+            font-family: ${inter.style.fontFamily};
+          }
+          [dir="rtl"] {
+            font-family: ${notoSansArabic.style.fontFamily};
+          }
         `}</style>
       </head>
       <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>

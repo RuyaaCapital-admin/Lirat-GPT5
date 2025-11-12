@@ -171,13 +171,14 @@ export default function FinancialPage() {
           <span>{getTranslation(locale, "headline")}</span>
         </div>
       ),
-      cell: ({ row }: { row: any }) => (
-        <div className="max-w-[500px]">
-          <div className="font-medium line-clamp-3 break-words overflow-hidden text-ellipsis">
-            {row.getValue("title") || "N/A"}
+      cell: ({ row }: { row: any }) => {
+        const title = row.getValue("title")
+        return (
+          <div className="max-w-[500px]">
+            <div className="font-medium line-clamp-2 break-words">{title ? String(title) : "N/A"}</div>
           </div>
-        </div>
-      ),
+        )
+      },
     },
     {
       accessorKey: "symbol",
@@ -239,7 +240,7 @@ export default function FinancialPage() {
       <DataTable
         columns={columns}
         data={data}
-        title="LIIRAT News Feed"
+        title={getTranslation(locale, "financial")}
         searchPlaceholder={locale === "ar" ? "ابحث عن العناوين والرموز..." : "Search headlines, symbols..."}
         loading={loading}
         onRefresh={fetchData}
