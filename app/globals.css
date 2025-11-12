@@ -372,3 +372,22 @@
 .price-ticker:hover {
   animation-play-state: paused;
 }
+
+.hero-animate {
+  opacity: 0;
+  transform: translateY(22px);
+  animation: heroFade 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--hero-delay, 0s);
+  will-change: opacity, transform;
+}
+
+@keyframes heroFade {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

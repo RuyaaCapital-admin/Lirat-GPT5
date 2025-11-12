@@ -5,6 +5,18 @@ type Pair = {
   quote: string
 }
 
+function toNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
 function parsePairs(searchParams: URLSearchParams): Pair[] {
   const pairs = searchParams.getAll("pair")
   const unique = new Set<string>()
@@ -62,14 +74,14 @@ export async function GET(req: Request) {
           }
 
           const data = await response.json()
-          const price = data?.price ?? data?.bid ?? data?.ask ?? null
+          const price = toNumber(data?.price) ?? toNumber(data?.bid) ?? toNumber(data?.ask)
 
           return {
             pair: `${base}-${quote}`,
             price,
             timestamp: data?.timestamp ? Number(data.timestamp) * 1000 : Date.now(),
-            change: data?.change ?? null,
-            changePercent: data?.changesPercentage ?? null,
+            change: toNumber(data?.change),
+            changePercent: toNumber(data?.changesPercentage),
           }
         } catch (error) {
           console.error("[v0] Forex fetch pair failed:", endpoint, error)

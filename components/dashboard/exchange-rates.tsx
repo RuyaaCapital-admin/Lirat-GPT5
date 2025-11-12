@@ -115,41 +115,50 @@ export function ExchangeRatesPanel() {
           </Link>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="space-y-4">
           {rows.map((row) => {
             const positive = (row.change ?? 0) >= 0
             const formattedPrice = formatNumber(row.price, row.pair === "USD-SYP" || row.pair === "TRY-SYP" ? 0 : 3)
             const formattedChange = formatDelta(row.change)
+            const pairLabel = row.pair.replace("-", " / ")
 
             return (
-            <Link
+              <Link
                 key={row.id}
                 href={`/markets?base=${row.pair}`}
                 className={cn(
-                  "group relative overflow-hidden rounded-3xl border border-white/60 bg-white/85 p-5 shadow-[0_18px_45px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_26px_60px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/80 dark:shadow-[0_22px_60px_rgba(2,6,23,0.55)]",
+                  "group relative flex items-center justify-between gap-6 overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/80 dark:shadow-[0_24px_70px_rgba(2,6,23,0.55)]",
                 )}
               >
-                <div className="absolute inset-0 rounded-3xl opacity-0 transition-opacity duration-200 group-hover:opacity-10 group-hover:bg-primary" />
-                <div className="relative space-y-3">
-                  <div className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                    {locale === "ar" ? row.labelAr : row.labelEn}
+                <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/15 dark:via-primary/5" />
+                </div>
+                <div className="relative flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary dark:bg-primary/15 dark:text-primary-foreground">
+                    {pairLabel.split(" / ")[0]}
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-semibold text-foreground">{formattedPrice}</span>
-                    <span
-                      className={cn(
-                        "text-xs font-semibold",
-                        positive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400",
-                      )}
-                    >
-                      {formattedChange === "—" ? formattedChange : `${positive ? "+" : ""}${formattedChange}%`}
-                    </span>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      {locale === "ar" ? row.labelAr : row.labelEn}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground/70">
+                      {convertToEnglishNumbers(pairLabel)}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    {locale === "ar"
-                      ? "تحديث خلال ستين ثانية"
-                      : "Refreshes every sixty seconds"}
-                  </p>
+                </div>
+                <div className="relative flex items-center gap-4">
+                  <span className="text-2xl font-semibold text-foreground">{formattedPrice}</span>
+                  <span
+                    className={cn(
+                      "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+                      positive
+                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                        : "bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300",
+                    )}
+                  >
+                    {formattedChange === "—" ? formattedChange : `${positive ? "+" : ""}${formattedChange}%`}
+                  </span>
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary" />
                 </div>
               </Link>
             )
@@ -157,11 +166,11 @@ export function ExchangeRatesPanel() {
         </div>
 
         {loading && (
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="h-28 rounded-3xl border border-white/50 bg-white/70 shadow-inner animate-pulse dark:border-white/10 dark:bg-background/70"
+                className="h-16 rounded-3xl border border-white/50 bg-white/70 shadow-inner animate-pulse dark:border-white/10 dark:bg-background/70"
               />
             ))}
           </div>

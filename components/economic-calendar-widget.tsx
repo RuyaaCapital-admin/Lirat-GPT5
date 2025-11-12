@@ -200,6 +200,15 @@ function EconomicCalendarWidgetComponent() {
           overflow: hidden;
         }
 
+        .calendar-inner::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(180deg, rgba(242, 248, 244, 0.16), rgba(255, 255, 255, 0.02));
+          opacity: 0.35;
+        }
+
         #economicCalendarWidget {
           width: 100% !important;
           max-width: 100% !important;
@@ -399,6 +408,11 @@ function EconomicCalendarWidgetComponent() {
             border-color: rgba(76, 116, 92, 0.25);
           }
 
+          .calendar-inner::before {
+            background: radial-gradient(circle at 20% 20%, rgba(18, 32, 44, 0.55), transparent 65%);
+            opacity: 0.55;
+          }
+
           #economicCalendarWidget iframe {
             border-radius: 24px !important;
           }
@@ -423,6 +437,11 @@ function EconomicCalendarWidgetComponent() {
             color: rgba(218, 236, 227, 0.9);
             text-shadow: 0 8px 20px rgba(2, 6, 23, 0.6);
           }
+        }
+
+        .dark .calendar-loading {
+          background: rgba(12, 20, 30, 0.75);
+          border-color: rgba(76, 116, 92, 0.35);
         }
       `}</style>
     </div>

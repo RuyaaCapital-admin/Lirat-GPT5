@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react"
 import { DataTable, type Row } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
-import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { convertToEnglishNumbers, getTranslation } from "@/lib/i18n"
-import { Clock, Newspaper, TrendingUp } from "lucide-react"
+import { Clock, Newspaper, ArrowUpRight } from "lucide-react"
 
 export default function FinancialPage() {
   const [data, setData] = useState<Row[]>([])
@@ -19,7 +18,6 @@ export default function FinancialPage() {
       const response = await fetch(`/api/fmp/news?locale=${locale}`, { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
-        console.log("[v0] Financial news data:", result.items)
         setData(result.items || [])
       } else {
         console.error("Failed to fetch financial data:", response.status)
@@ -36,103 +34,6 @@ export default function FinancialPage() {
   useEffect(() => {
     fetchData()
   }, [locale])
-
-  const getSentimentBadge = (sentiment: any) => {
-    // Handle sentiment object with polarity, neg, neu, pos structure
-    if (sentiment && typeof sentiment === "object") {
-      // If it has polarity property, use that
-      if (sentiment.polarity !== undefined) {
-        const polarity = String(sentiment.polarity).toLowerCase()
-        if (polarity === "positive" || polarity === "1" || sentiment.polarity > 0) {
-          return (
-            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-              {locale === "ar" ? "إيجابي" : "Positive"}
-            </Badge>
-          )
-        } else if (polarity === "negative" || polarity === "-1" || sentiment.polarity < 0) {
-          return (
-            <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-              {locale === "ar" ? "سلبي" : "Negative"}
-            </Badge>
-          )
-        } else {
-          return (
-            <Badge variant="outline" className="text-xs">
-              {locale === "ar" ? "محايد" : "Neutral"}
-            </Badge>
-          )
-        }
-      }
-
-      // If it has pos, neg, neu scores, determine sentiment based on highest score
-      if (sentiment.pos !== undefined && sentiment.neg !== undefined) {
-        const pos = Number.parseFloat(sentiment.pos) || 0
-        const neg = Number.parseFloat(sentiment.neg) || 0
-        const neu = Number.parseFloat(sentiment.neu) || 0
-
-        if (pos > neg && pos > neu) {
-          return (
-            <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-              {locale === "ar" ? "إيجابي" : "Positive"} ({(pos * 100).toFixed(0)}%)
-            </Badge>
-          )
-        } else if (neg > pos && neg > neu) {
-          return (
-            <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-              {locale === "ar" ? "سلبي" : "Negative"} ({(neg * 100).toFixed(0)}%)
-            </Badge>
-          )
-        } else {
-          return (
-            <Badge variant="outline" className="text-xs">
-              {locale === "ar" ? "محايد" : "Neutral"} ({(neu * 100).toFixed(0)}%)
-            </Badge>
-          )
-        }
-      }
-
-      return (
-        <Badge variant="outline" className="text-xs">
-          N/A
-        </Badge>
-      )
-    }
-
-    // Handle string/number sentiment values
-    const sentimentStr = sentiment ? String(sentiment).toLowerCase() : ""
-
-    switch (sentimentStr) {
-      case "positive":
-      case "bullish":
-      case "1":
-        return (
-          <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-            {locale === "ar" ? "إيجابي" : "Positive"}
-          </Badge>
-        )
-      case "negative":
-      case "bearish":
-      case "-1":
-        return (
-          <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-            {locale === "ar" ? "سلبي" : "Negative"}
-          </Badge>
-        )
-      case "neutral":
-      case "0":
-        return (
-          <Badge variant="outline" className="text-xs">
-            {locale === "ar" ? "محايد" : "Neutral"}
-          </Badge>
-        )
-      default:
-        return (
-          <Badge variant="outline" className="text-xs">
-            N/A
-          </Badge>
-        )
-    }
-  }
 
   const formatTime = (timeStr: string) => {
     if (!timeStr) return "N/A"
@@ -159,7 +60,7 @@ export default function FinancialPage() {
     {
       accessorKey: "publishedDate",
       header: () => (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-1">
           <Clock className="h-4 w-4" />
           <span>{getTranslation(locale, "time")}</span>
         </div>
@@ -171,16 +72,31 @@ export default function FinancialPage() {
     {
       accessorKey: "title",
       header: () => (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center gap-1">
           <Newspaper className="h-4 w-4" />
           <span>{getTranslation(locale, "headline")}</span>
         </div>
       ),
       cell: ({ row }: { row: any }) => {
         const title = row.getValue("title")
+        const link = row.original?.link
         return (
-          <div className="max-w-[500px]">
-            <div className="font-medium line-clamp-2 break-words">{title ? String(title) : "N/A"}</div>
+          <div className="max-w-[520px]">
+            {link ? (
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex max-w-full items-start gap-2 text-left"
+              >
+                <ArrowUpRight className="mt-1 h-3 w-3 shrink-0 translate-y-[1px] text-muted-foreground transition-transform duration-200 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary" />
+                <span className="font-medium leading-snug text-foreground transition-colors duration-200 group-hover:text-primary line-clamp-2">
+                  {title ? String(title) : "N/A"}
+                </span>
+              </a>
+            ) : (
+              <span className="font-medium line-clamp-2 break-words">{title ? String(title) : "N/A"}</span>
+            )}
           </div>
         )
       },
@@ -200,26 +116,23 @@ export default function FinancialPage() {
       },
     },
     {
-      accessorKey: "sentiment",
+      accessorKey: "source",
       header: () => (
-        <div className="flex items-center space-x-1">
-          <TrendingUp className="h-4 w-4" />
-          <span>{getTranslation(locale, "sentiment")}</span>
+        <div className="flex items-center gap-1">
+          <Newspaper className="h-4 w-4" />
+          <span>{locale === "ar" ? "المصدر" : "Source"}</span>
         </div>
       ),
-      cell: ({ row }: { row: any }) => getSentimentBadge(row.getValue("sentiment")),
-    },
-    {
-      id: "actions",
-      header: getTranslation(locale, "addAlert"),
-      cell: ({ row }: { row: any }) => (
-        <AlertButton
-          eventTitle={row.getValue("title") || "Financial News"}
-          eventTime={row.getValue("publishedDate")}
-          symbol={row.getValue("symbol")}
-          type="financial"
-        />
-      ),
+      cell: ({ row }: { row: any }) => {
+        const source = row.getValue("source")
+        return source ? (
+          <Badge variant="outline" className="text-xs font-medium">
+            {source}
+          </Badge>
+        ) : (
+          <span className="text-sm text-muted-foreground">N/A</span>
+        )
+      },
     },
   ]
 

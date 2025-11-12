@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { ModernPanel, ModernPanelHeader, ModernPanelTitle, ModernPanelContent } from "@/components/modern-panel"
 import { TrendingUp, TrendingDown, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { PriceAlertButton } from "@/components/price-alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 
@@ -90,32 +91,37 @@ export function MarketOverviewCard() {
             </div>
           ) : (
             marketData.map((market) => (
-              <div
-                key={market.symbol}
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
+                <div
+                  key={market.symbol}
+                  className="flex items-center justify-between rounded-lg bg-muted/50 p-3 transition-colors hover:bg-muted/70"
+                >
                   <div className="font-medium font-mono">{market.symbol}</div>
-                </div>
-                <div className="flex items-center space-x-3 text-right">
-                  <div className="font-mono text-sm">${market.price?.toFixed(2) || "N/A"}</div>
-                  <div
-                    className={`flex items-center space-x-1 text-sm font-medium ${
-                      (market.changePercent || 0) >= 0 ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {(market.changePercent || 0) >= 0 ? (
-                      <TrendingUp className="h-3 w-3" />
-                    ) : (
-                      <TrendingDown className="h-3 w-3" />
-                    )}
-                    <span>
-                      {(market.changePercent || 0) >= 0 ? "+" : ""}
-                      {market.changePercent?.toFixed(2) || "0.00"}%
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="font-mono text-sm">
+                      {market.price !== undefined ? `$${market.price.toFixed(2)}` : "—"}
+                    </div>
+                    <div
+                      className={`flex items-center gap-1 text-sm font-medium ${
+                        (market.changePercent || 0) >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {(market.changePercent || 0) >= 0 ? (
+                        <TrendingUp className="h-3 w-3" />
+                      ) : (
+                        <TrendingDown className="h-3 w-3" />
+                      )}
+                      <span>
+                        {(market.changePercent || 0) >= 0 ? "+" : ""}
+                        {market.changePercent?.toFixed(2) ?? "0.00"}%
+                      </span>
+                    </div>
+                    <PriceAlertButton
+                      symbol={market.symbol}
+                      currentPrice={market.price}
+                      className="-mr-2 text-muted-foreground hover:text-primary"
+                    />
                   </div>
                 </div>
-              </div>
             ))
           )}
         </div>

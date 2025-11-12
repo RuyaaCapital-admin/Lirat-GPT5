@@ -53,8 +53,17 @@ export function Navigation() {
       <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         {/* LIIRAT Logo */}
         <div className={cn("flex items-center gap-3", rtl && "flex-row-reverse gap-3")}>
-          <Link href="/" className="flex items-center gap-3">
-            <LiiratLogo size="md" showText={true} />
+          <Link
+            href="/"
+            onClick={(event) => {
+              if (pathname === "/") {
+                event.preventDefault()
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }
+            }}
+            className="flex items-center gap-3"
+          >
+            <LiiratLogo size="md" showText={false} />
           </Link>
         </div>
 
