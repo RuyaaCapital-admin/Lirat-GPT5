@@ -13,6 +13,7 @@ import { Bell, Plus, Trash2, TrendingUp, TrendingDown, Edit, RefreshCw, Search }
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 import { toast } from "sonner"
+import { convertToEnglishNumbers } from "@/lib/i18n"
 
 interface Alert {
   id: string
@@ -189,9 +190,11 @@ export default function AlertsPage() {
   }
 
   const formatPrice = (price: number, symbol: string) => {
-    if (symbol.includes("JPY")) return price.toFixed(2)
-    if (symbol.includes("USD") && !symbol.includes(".US")) return price.toFixed(4)
-    return price.toFixed(2)
+    let formatted: string
+    if (symbol.includes("JPY")) formatted = price.toFixed(2)
+    else if (symbol.includes("USD") && !symbol.includes(".US")) formatted = price.toFixed(4)
+    else formatted = price.toFixed(2)
+    return convertToEnglishNumbers(formatted)
   }
 
   const getCurrentPrice = (symbol: string) => {

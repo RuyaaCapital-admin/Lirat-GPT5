@@ -10,6 +10,7 @@ import { getTranslation } from "@/lib/i18n"
 import { getUserTimezoneAbbr } from "@/lib/timezone"
 import { Clock, Globe, TrendingUp, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { convertToEnglishNumbers } from "@/lib/i18n"
 
 export default function EconomicPage() {
   const [data, setData] = useState<Row[]>([])
@@ -169,7 +170,7 @@ export default function EconomicPage() {
         const actual = row.getValue("actual")
         return (
           <div className="font-mono text-sm font-semibold">
-            {actual !== null && actual !== undefined ? actual : "N/A"}
+            {actual !== null && actual !== undefined ? convertToEnglishNumbers(actual) : "N/A"}
           </div>
         )
       },
@@ -181,7 +182,7 @@ export default function EconomicPage() {
         const forecast = row.getValue("forecast")
         return (
           <div className="font-mono text-sm text-muted-foreground">
-            {forecast !== null && forecast !== undefined ? forecast : "N/A"}
+            {forecast !== null && forecast !== undefined ? convertToEnglishNumbers(forecast) : "N/A"}
           </div>
         )
       },
@@ -193,7 +194,7 @@ export default function EconomicPage() {
         const previous = row.getValue("previous")
         return (
           <div className="font-mono text-sm text-muted-foreground">
-            {previous !== null && previous !== undefined ? previous : "N/A"}
+            {previous !== null && previous !== undefined ? convertToEnglishNumbers(previous) : "N/A"}
           </div>
         )
       },
@@ -206,7 +207,9 @@ export default function EconomicPage() {
         const isPositive = typeof change === "number" && change > 0
         return (
           <div className={`font-mono text-sm font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
-            {change !== null && change !== undefined ? `${isPositive ? "+" : ""}${change.toFixed(2)}%` : "N/A"}
+            {change !== null && change !== undefined
+              ? `${isPositive ? "+" : ""}${convertToEnglishNumbers(change.toFixed(2))}%`
+              : "N/A"}
           </div>
         )
       },
@@ -237,7 +240,7 @@ export default function EconomicPage() {
   return (
     <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "economic")}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "economicCalendar")}</h1>
         <p className="text-muted-foreground">
           {locale === "ar"
             ? "أحداث اقتصادية حقيقية ومؤشرات من أكبر الاقتصادات العالمية"

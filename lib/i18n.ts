@@ -39,6 +39,7 @@ export const translations = {
     symbol: "Symbol",
     sentiment: "Sentiment",
     date: "Date",
+    change: "Change %", // added change key
 
     // Theme & Language
     lightMode: "Light Mode",
@@ -99,6 +100,7 @@ export const translations = {
     symbol: "الرمز",
     sentiment: "المشاعر",
     date: "التاريخ",
+    change: "نسبة التغير", // added change key
 
     // Theme & Language
     lightMode: "الوضع الفاتح",
@@ -132,4 +134,22 @@ export function getTranslation(locale: Locale, key: keyof typeof translations.en
 
 export function isRTL(locale: Locale): boolean {
   return locale === "ar"
+}
+
+export function convertToEnglishNumbers(value: any): string {
+  if (value === null || value === undefined) return "N/A"
+  const str = String(value)
+  const arabicToEnglish: Record<string, string> = {
+    "٠": "0",
+    "١": "1",
+    "٢": "2",
+    "٣": "3",
+    "٤": "4",
+    "٥": "5",
+    "٦": "6",
+    "٢": "7",
+    "٨": "8",
+    "٩": "9",
+  }
+  return str.replace(/[٠-٩]/g, (match) => arabicToEnglish[match])
 }

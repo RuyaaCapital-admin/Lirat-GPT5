@@ -203,25 +203,30 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
 
         let chartData = []
         if (data.ohlcv && Array.isArray(data.ohlcv)) {
-          chartData = data.ohlcv.map((item: any) => ({
-            time: item.time,
-            open: item.open,
-            high: item.high,
-            low: item.low,
-            close: item.close,
-          }))
+          chartData = data.ohlcv
+            .map((item: any) => ({
+              time: item.time || Math.floor(new Date(item.date).getTime() / 1000),
+              open: Number.parseFloat(item.open || item.o),
+              high: Number.parseFloat(item.high || item.h),
+              low: Number.parseFloat(item.low || item.l),
+              close: Number.parseFloat(item.close || item.c),
+            }))
+            .sort((a: any, b: any) => a.time - b.time)
         } else if (Array.isArray(data)) {
-          chartData = data.map((item: any) => ({
-            time: Math.floor(new Date(item.date).getTime() / 1000),
-            open: Number.parseFloat(item.open),
-            high: Number.parseFloat(item.high),
-            low: Number.parseFloat(item.low),
-            close: Number.parseFloat(item.close),
-          }))
+          chartData = data
+            .map((item: any) => ({
+              time: Math.floor(new Date(item.date).getTime() / 1000),
+              open: Number.parseFloat(item.open),
+              high: Number.parseFloat(item.high),
+              low: Number.parseFloat(item.low),
+              close: Number.parseFloat(item.close),
+            }))
+            .sort((a: any, b: any) => a.time - b.time)
         }
 
         if (chartData.length > 0 && seriesRef.current && typeof seriesRef.current.setData === "function") {
           seriesRef.current.setData(chartData)
+          chartRef.current?.timeScale?.fitContent?.()
 
           if (chartData.length >= 2) {
             const current = chartData[chartData.length - 1]
