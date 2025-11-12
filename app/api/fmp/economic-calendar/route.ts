@@ -23,13 +23,16 @@ export async function GET() {
     const normalizedItems = (Array.isArray(items) ? items : []).map((item: any) => ({
       event: item.event,
       country: item.country,
-      date: item.releaseDate,
-      time: item.releaseTime,
+      date: item.releaseDate || "",
+      time: item.releaseTime || "",
       actual: item.actual,
       forecast: item.forecast,
       previous: item.previous,
       impact: item.impact || "Medium",
     }))
+
+    console.log("[v0] Normalized items count:", normalizedItems.length)
+    console.log("[v0] First item:", normalizedItems[0])
 
     return Response.json({ items: normalizedItems })
   } catch (error) {

@@ -121,21 +121,31 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
         },
       })
 
-      if (typeof chart.addCandlestickSeries === "function") {
-        const candlestickSeries = chart.addCandlestickSeries({
+      let candlestickSeries: any
+      if (typeof chart.addCandlestick === "function") {
+        candlestickSeries = chart.addCandlestick({
           upColor: "#16a34a",
           downColor: "#dc2626",
           borderVisible: false,
           wickUpColor: "#16a34a",
           wickDownColor: "#dc2626",
         })
-
-        chartRef.current = chart
-        seriesRef.current = candlestickSeries
+      } else if (typeof chart.addCandlestickSeries === "function") {
+        candlestickSeries = chart.addCandlestickSeries({
+          upColor: "#16a34a",
+          downColor: "#dc2626",
+          borderVisible: false,
+          wickUpColor: "#16a34a",
+          wickDownColor: "#dc2626",
+        })
       } else {
-        console.error("addCandlestickSeries method not available")
+        console.error("[v0] addCandlestick or addCandlestickSeries method not available on chart object")
+        console.log("[v0] Available chart methods:", Object.getOwnPropertyNames(Object.getPrototypeOf(chart)))
         return
       }
+
+      chartRef.current = chart
+      seriesRef.current = candlestickSeries
       // Expose chart API for AI control
       ;(window as any).ChartAPI = {
         addLevel: (price: number, title?: string) => {

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 import { LiiratLogo } from "@/components/liirat-logo"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation, isRTL } from "@/lib/i18n"
@@ -105,8 +106,9 @@ export function Navigation() {
           })}
         </nav>
 
-        {/* Theme Toggle */}
-        <div className="flex items-center">
+        {/* Language Switcher and Theme Toggle */}
+        <div className="flex items-center space-x-2">
+          <LanguageSwitcher />
           <ThemeToggle />
         </div>
       </div>

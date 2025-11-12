@@ -7,6 +7,7 @@ import { CountryFlag } from "@/components/country-flag"
 import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
+import { convertUTCToLocalTime, convertUTCToLocalTimeArabic } from "@/lib/timezone"
 import { Clock, Globe, TrendingUp } from "lucide-react"
 
 export default function EconomicPage() {
@@ -20,6 +21,7 @@ export default function EconomicPage() {
       const response = await fetch("/api/fmp/economic-calendar", { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
+        console.log("[v0] Economic calendar data:", result.items)
         setData(result.items || [])
       }
     } catch (error) {
@@ -35,46 +37,52 @@ export default function EconomicPage() {
 
   const getImpactBadge = (impact: string) => {
     const impactLower = impact?.toLowerCase()
+    const impactText =
+      impactLower === "high"
+        ? getTranslation(locale, "high")
+        : impactLower === "medium"
+          ? getTranslation(locale, "medium")
+          : impactLower === "low"
+            ? getTranslation(locale, "low")
+            : impact || "N/A"
+
     switch (impactLower) {
       case "high":
         return (
           <Badge variant="destructive" className="text-xs">
-            High
+            {impactText}
           </Badge>
         )
       case "medium":
         return (
           <Badge variant="secondary" className="text-xs bg-yellow-500/10 text-yellow-700 dark:text-yellow-400">
-            Medium
+            {impactText}
           </Badge>
         )
       case "low":
         return (
           <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-            Low
+            {impactText}
           </Badge>
         )
       default:
         return (
           <Badge variant="outline" className="text-xs">
-            {impact || "N/A"}
+            {impactText}
           </Badge>
         )
     }
   }
 
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return "N/A"
+  const formatTime = (dateStr: string, timeStr?: string) => {
+    if (!dateStr) return "N/A"
     try {
-      const date = new Date(timeStr)
-      return date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    } catch {
-      return timeStr
+      const convertedTime =
+        locale === "ar" ? convertUTCToLocalTimeArabic(dateStr, timeStr) : convertUTCToLocalTime(dateStr, timeStr)
+      return convertedTime
+    } catch (error) {
+      console.error("[v0] Time formatting error:", error)
+      return dateStr
     }
   }
 
@@ -87,7 +95,11 @@ export default function EconomicPage() {
           <span>{getTranslation(locale, "time")}</span>
         </div>
       ),
-      cell: ({ row }: { row: any }) => <div className="font-mono text-sm">{formatTime(row.getValue("time"))}</div>,
+      cell: ({ row }: { row: any }) => {
+        const date = row.getValue("date")
+        const time = row.getValue("time")
+        return <div className="font-mono text-sm whitespace-nowrap">{formatTime(date, time)}</div>
+      },
     },
     {
       accessorKey: "country",
@@ -100,6 +112,9 @@ export default function EconomicPage() {
       cell: ({ row }: { row: any }) => {
         const country = row.getValue("country") || "N/A"
         const countryName = typeof country === "string" ? country : String(country)
+
+        console.log("[v0] Rendering flag for country:", countryName)
+
         return (
           <div className="flex items-center space-x-2">
             <CountryFlag countryCode={countryName} countryName={countryName} size="sm" />

@@ -27,7 +27,7 @@ export const translations = {
     marketOverview: "Market Overview",
 
     // Tables
-    time: "Time",
+    time: "Time (Local)",
     country: "Country",
     event: "Event",
     actual: "Actual",
@@ -38,11 +38,14 @@ export const translations = {
     headline: "Headline",
     symbol: "Symbol",
     sentiment: "Sentiment",
+    date: "Date",
 
-    // Theme
+    // Theme & Language
     lightMode: "Light Mode",
     darkMode: "Dark Mode",
     language: "Language",
+    english: "English",
+    arabic: "العربية",
 
     // LIIRAT Specific
     liiratNews: "LIIRAT News",
@@ -56,6 +59,10 @@ export const translations = {
     searchSymbols: "Search symbols...",
     selectSymbol: "Select Symbol",
     noSymbolsFound: "No symbols found",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
+    noEventsAvailable: "No events available",
   },
   ar: {
     // Navigation
@@ -80,8 +87,8 @@ export const translations = {
     marketOverview: "نظرة عامة على السوق",
 
     // Tables
-    time: "الوقت",
-    country: "البلد",
+    time: "الوقت (المحلي)",
+    country: "الدولة",
     event: "الحدث",
     actual: "الفعلي",
     forecast: "المتوقع",
@@ -91,11 +98,14 @@ export const translations = {
     headline: "العنوان",
     symbol: "الرمز",
     sentiment: "المشاعر",
+    date: "التاريخ",
 
-    // Theme
+    // Theme & Language
     lightMode: "الوضع الفاتح",
     darkMode: "الوضع الداكن",
     language: "اللغة",
+    english: "English",
+    arabic: "العربية",
 
     // LIIRAT Specific
     liiratNews: "أخبار ليرات",
@@ -107,8 +117,12 @@ export const translations = {
     // Additional translations
     addAlert: "إضافة تنبيه",
     searchSymbols: "البحث عن الرموز...",
-    selectSymbol: "حدد الرمز",
+    selectSymbol: "اختر الرمز",
     noSymbolsFound: "لم يتم العثور على رموز",
+    high: "مرتفع",
+    medium: "متوسط",
+    low: "منخفض",
+    noEventsAvailable: "لا توجد أحداث متاحة",
   },
 } as const
 
