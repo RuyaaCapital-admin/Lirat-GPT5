@@ -88,6 +88,7 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
     const copyright = document.createElement("div")
     copyright.className =
       "tradingview-widget-copyright text-xs text-muted-foreground px-4 pb-2 pt-3 text-center"
+    copyright.style.display = "none"
     copyright.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbolPath}/" rel="noopener" target="_blank">TradingView</a>`
     widgetWrapper.appendChild(copyright)
 

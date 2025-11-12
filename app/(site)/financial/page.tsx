@@ -16,7 +16,7 @@ export default function FinancialPage() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/fmp/news", { cache: "no-store" })
+      const response = await fetch(`/api/fmp/news?locale=${locale}`, { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
         console.log("[v0] Financial news data:", result.items)
@@ -35,7 +35,7 @@ export default function FinancialPage() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [locale])
 
   const getSentimentBadge = (sentiment: any) => {
     // Handle sentiment object with polarity, neg, neu, pos structure
