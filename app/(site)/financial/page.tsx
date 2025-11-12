@@ -5,7 +5,7 @@ import { DataTable, type Row } from "@/components/data-table"
 import { Badge } from "@/components/ui/badge"
 import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
-import { getTranslation } from "@/lib/i18n"
+import { convertToEnglishNumbers, getTranslation } from "@/lib/i18n"
 import { Clock, Newspaper, TrendingUp } from "lucide-react"
 
 export default function FinancialPage() {
@@ -138,15 +138,16 @@ export default function FinancialPage() {
     if (!timeStr) return "N/A"
     try {
       const date = new Date(timeStr)
-      return date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
+      const formatted = date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
+      return convertToEnglishNumbers(formatted)
     } catch {
-      return timeStr
+      return convertToEnglishNumbers(timeStr)
     }
   }
 

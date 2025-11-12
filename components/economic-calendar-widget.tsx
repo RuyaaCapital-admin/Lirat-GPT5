@@ -142,7 +142,12 @@ function EconomicCalendarWidgetComponent() {
           max-width: 100%;
           min-height: 800px;
           height: auto;
-          background: #ffffff;
+          background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+          border-radius: 28px;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          box-shadow:
+            0 24px 60px rgba(15, 23, 42, 0.08),
+            0 8px 20px rgba(15, 23, 42, 0.06);
           overflow: hidden;
           box-sizing: border-box;
         }
@@ -185,6 +190,9 @@ function EconomicCalendarWidgetComponent() {
           min-height: 800px;
           box-sizing: border-box;
           transition: opacity 0.3s ease;
+          border-radius: 24px;
+          background: rgba(255, 255, 255, 0.95);
+          overflow: hidden;
         }
 
         #economicCalendarWidget {
@@ -193,7 +201,7 @@ function EconomicCalendarWidgetComponent() {
           height: 100% !important;
           min-height: 800px !important;
           box-sizing: border-box !important;
-          overflow-x: hidden !important;
+          overflow: hidden !important;
         }
 
         #economicCalendarWidget iframe {
@@ -203,7 +211,8 @@ function EconomicCalendarWidgetComponent() {
           min-height: 800px !important;
           border: none !important;
           box-sizing: border-box !important;
-          overflow-x: hidden !important;
+          border-radius: 24px !important;
+          overflow: hidden !important;
         }
 
         .calendar-wrapper .ecw-copyright,
@@ -234,10 +243,10 @@ function EconomicCalendarWidgetComponent() {
           right: 0;
           height: 85px;
           background: linear-gradient(to top,
-            rgba(255, 255, 255, 1) 0%,
-            rgba(255, 255, 255, 0.98) 50%,
-            rgba(255, 255, 255, 0.8) 80%,
-            rgba(255, 255, 255, 0) 100%
+            rgba(248, 250, 252, 1) 0%,
+            rgba(248, 250, 252, 0.92) 50%,
+            rgba(248, 250, 252, 0.75) 80%,
+            rgba(248, 250, 252, 0) 100%
           );
           z-index: 10000;
           pointer-events: auto !important;
@@ -257,18 +266,18 @@ function EconomicCalendarWidgetComponent() {
           font-family: 'Noto Sans Arabic', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           font-size: 16px;
           font-weight: 700;
-          color: #7cb342;
+          color: #4b5563;
           text-align: center;
           letter-spacing: 0.5px;
           pointer-events: none;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+          text-shadow: 0 1px 2px rgba(148, 163, 184, 0.3);
           display: flex;
           align-items: center;
-          gap: 6px;
-          background: rgba(255, 255, 255, 0.95);
-          padding: 8px 20px;
-          border-radius: 20px;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          gap: 8px;
+          background: rgba(255, 255, 255, 0.96);
+          padding: 10px 24px;
+          border-radius: 9999px;
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.1);
         }
 
         .brand-icon {
@@ -353,6 +362,39 @@ function EconomicCalendarWidgetComponent() {
           }
           .brand-icon {
             font-size: 15px;
+          }
+        }
+
+        @media (prefers-color-scheme: dark) {
+          .calendar-wrapper {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88));
+            border: 1px solid rgba(148, 163, 184, 0.25);
+            box-shadow:
+              0 24px 60px rgba(2, 6, 23, 0.55),
+              0 8px 20px rgba(2, 6, 23, 0.35);
+          }
+
+          .calendar-inner {
+            background: rgba(15, 23, 42, 0.85);
+          }
+
+          #economicCalendarWidget iframe {
+            border-radius: 24px !important;
+          }
+
+          .bottom-blocker {
+            background: linear-gradient(to top,
+              rgba(15, 23, 42, 0.96) 0%,
+              rgba(15, 23, 42, 0.8) 55%,
+              rgba(15, 23, 42, 0.4) 80%,
+              rgba(15, 23, 42, 0) 100%
+            );
+          }
+
+          .liirat-branding {
+            background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0;
+            text-shadow: 0 1px 4px rgba(2, 6, 23, 0.5);
           }
         }
       `}</style>

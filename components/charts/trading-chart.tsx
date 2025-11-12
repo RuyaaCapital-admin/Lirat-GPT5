@@ -1,24 +1,18 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTheme } from "next-themes"
-import { ModernPanel, ModernPanelContent, ModernPanelHeader, ModernPanelTitle } from "@/components/modern-panel"
+import { useLocale } from "@/hooks/use-locale"
+import {
+  ModernPanel,
+  ModernPanelContent,
+  ModernPanelHeader,
+  ModernPanelTitle,
+} from "@/components/modern-panel"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Minus, RefreshCw } from "lucide-react"
-
-let createChart: any = null
-let LineStyle: any = null
-
-interface OHLCVData {
-  ts: number
-  o: number
-  h: number
-  l: number
-  c: number
-  v: number
-}
+import { RefreshCw } from "lucide-react"
 
 interface TradingChartProps {
   symbol: string
@@ -28,345 +22,180 @@ interface TradingChartProps {
 }
 
 const SYMBOLS = [
-  { value: "AAPL", label: "Apple Inc" },
-  { value: "GOOGL", label: "Alphabet Inc" },
-  { value: "MSFT", label: "Microsoft" },
-  { value: "TSLA", label: "Tesla Inc" },
-  { value: "AMZN", label: "Amazon" },
-  { value: "NVDA", label: "NVIDIA" },
-  { value: "META", label: "Meta" },
-  { value: "NFLX", label: "Netflix" },
-  { value: "BTCUSD", label: "Bitcoin" },
-  { value: "ETHUSD", label: "Ethereum" },
-  { value: "XAUUSD", label: "Gold" },
-  { value: "XAGUSD", label: "Silver" },
-  { value: "EURUSD", label: "EUR/USD" },
-  { value: "GBPUSD", label: "GBP/USD" },
-  { value: "USDJPY", label: "USD/JPY" },
+  { value: "AAPL", label: "Apple · AAPL", tvSymbol: "NASDAQ:AAPL" },
+  { value: "GOOGL", label: "Alphabet · GOOGL", tvSymbol: "NASDAQ:GOOGL" },
+  { value: "MSFT", label: "Microsoft · MSFT", tvSymbol: "NASDAQ:MSFT" },
+  { value: "TSLA", label: "Tesla · TSLA", tvSymbol: "NASDAQ:TSLA" },
+  { value: "AMZN", label: "Amazon · AMZN", tvSymbol: "NASDAQ:AMZN" },
+  { value: "NVDA", label: "NVIDIA · NVDA", tvSymbol: "NASDAQ:NVDA" },
+  { value: "META", label: "Meta · META", tvSymbol: "NASDAQ:META" },
+  { value: "NFLX", label: "Netflix · NFLX", tvSymbol: "NASDAQ:NFLX" },
+  { value: "BTCUSD", label: "Bitcoin · BTCUSD", tvSymbol: "COINBASE:BTCUSD" },
+  { value: "ETHUSD", label: "Ethereum · ETHUSD", tvSymbol: "COINBASE:ETHUSD" },
+  { value: "XAUUSD", label: "Gold · XAUUSD", tvSymbol: "FOREXCOM:XAUUSD" },
+  { value: "XAGUSD", label: "Silver · XAGUSD", tvSymbol: "FOREXCOM:XAGUSD" },
+  { value: "EURUSD", label: "EUR / USD", tvSymbol: "FX:EURUSD" },
+  { value: "GBPUSD", label: "GBP / USD", tvSymbol: "FX:GBPUSD" },
+  { value: "USDJPY", label: "USD / JPY", tvSymbol: "FX:USDJPY" },
 ]
 
 const TIMEFRAMES = [
-  { value: "1m", label: "1 Minute" },
-  { value: "5m", label: "5 Minutes" },
-  { value: "15m", label: "15 Minutes" },
-  { value: "30m", label: "30 Minutes" },
-  { value: "1h", label: "1 Hour" },
-  { value: "4h", label: "4 Hours" },
-  { value: "1d", label: "1 Day" },
+  { value: "1m", labelEn: "1 Minute", labelAr: "دقيقة واحدة", interval: "1" },
+  { value: "5m", labelEn: "5 Minutes", labelAr: "خمس دقائق", interval: "5" },
+  { value: "15m", labelEn: "15 Minutes", labelAr: "15 دقيقة", interval: "15" },
+  { value: "30m", labelEn: "30 Minutes", labelAr: "30 دقيقة", interval: "30" },
+  { value: "1h", labelEn: "1 Hour", labelAr: "ساعة واحدة", interval: "60" },
+  { value: "4h", labelEn: "4 Hours", labelAr: "4 ساعات", interval: "240" },
+  { value: "1d", labelEn: "1 Day", labelAr: "يوم واحد", interval: "D" },
 ]
 
 export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeChange }: TradingChartProps) {
-  const chartContainerRef = useRef<HTMLDivElement>(null)
-  const chartRef = useRef<any>(null)
-  const seriesRef = useRef<any>(null)
-  const [loading, setLoading] = useState(false)
-  const [lastPrice, setLastPrice] = useState<number | null>(null)
-  const [priceChange, setPriceChange] = useState<number | null>(null)
-  const [priceChangePercent, setPriceChangePercent] = useState<number | null>(null)
-  const [chartReady, setChartReady] = useState(false)
-  const { theme, resolvedTheme } = useTheme()
+  const widgetContainerRef = useRef<HTMLDivElement | null>(null)
+  const { resolvedTheme } = useTheme()
+  const { locale } = useLocale()
+  const [refreshToken, setRefreshToken] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const isDark = resolvedTheme === "dark"
+  const activeSymbol = useMemo(
+    () => SYMBOLS.find((item) => item.value === symbol) ?? SYMBOLS[0],
+    [symbol],
+  )
+  const activeTimeframe = useMemo(
+    () => TIMEFRAMES.find((item) => item.value === timeframe) ?? TIMEFRAMES[4],
+    [timeframe],
+  )
 
-  useEffect(() => {
-    const loadChart = async () => {
-      try {
-        const chartModule = await import("lightweight-charts")
-        createChart = chartModule.createChart
-        LineStyle = chartModule.LineStyle
-        setChartReady(true)
-      } catch (error) {
-        console.error("Failed to load lightweight-charts:", error)
-      }
-    }
-    loadChart()
-  }, [])
-
-  const initChart = () => {
-    if (!chartContainerRef.current || !createChart || !LineStyle) {
-      console.warn("[v0] Missing dependencies for chart initialization")
-      return
-    }
-
-    try {
-      const chart = createChart(chartContainerRef.current, {
-        autoSize: true,
-        layout: {
-          background: { color: "transparent" },
-          textColor: isDark ? "#e2e8f0" : "#334155",
-        },
-        grid: {
-          vertLines: { color: isDark ? "#334155" : "#e2e8f0" },
-          horzLines: { color: isDark ? "#334155" : "#e2e8f0" },
-        },
-        crosshair: {
-          mode: 1,
-          vertLine: {
-            color: isDark ? "#64748b" : "#94a3b8",
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-          horzLine: {
-            color: isDark ? "#64748b" : "#94a3b8",
-            width: 1,
-            style: LineStyle.Dashed,
-          },
-        },
-        rightPriceScale: {
-          borderColor: isDark ? "#334155" : "#e2e8f0",
-          textColor: isDark ? "#e2e8f0" : "#334155",
-        },
-        timeScale: {
-          borderColor: isDark ? "#334155" : "#e2e8f0",
-          textColor: isDark ? "#e2e8f0" : "#334155",
-          timeVisible: true,
-          secondsVisible: false,
-        },
-      })
-
-      let chartSeries: any = null
-
-      if (typeof chart.addCandlestickSeries === "function") {
-        try {
-          chartSeries = chart.addCandlestickSeries({
-            upColor: "#16a34a",
-            downColor: "#dc2626",
-            borderVisible: false,
-            wickUpColor: "#16a34a",
-            wickDownColor: "#dc2626",
-          })
-          console.log("[v0] Candlestick series created successfully")
-        } catch (error) {
-          console.warn("[v0] Candlestick series creation failed:", error)
-          chartSeries = null
-        }
-      }
-
-      if (!chartSeries && typeof chart.addLineSeries === "function") {
-        try {
-          chartSeries = chart.addLineSeries({
-            color: "#3b82f6",
-            lineWidth: 2,
-          })
-          console.log("[v0] Line series created successfully")
-        } catch (error) {
-          console.error("[v0] Line series creation failed:", error)
-          return
-        }
-      }
-
-      if (!chartSeries) {
-        console.error("[v0] Failed to create any chart series")
-        return
-      }
-
-      chartRef.current = chart
-      seriesRef.current = chartSeries
-
-      // Expose chart API for AI control
-      ;(window as any).ChartAPI = {
-        addLevel: (price: number, title?: string) => {
-          if (chart && typeof chart.addPriceLine === "function") {
-            chart.addPriceLine({
-              price,
-              color: "#f59e0b",
-              lineWidth: 1,
-              lineStyle: LineStyle.Dashed,
-              axisLabelVisible: true,
-              title: title || `Level ${price}`,
-            })
-          }
-        },
-        removeLevels: () => {
-          console.log("Remove levels called")
-        },
-        setSymbol: (newSymbol: string) => {
-          onSymbolChange(newSymbol)
-        },
-        setTimeframe: (newTimeframe: string) => {
-          onTimeframeChange(newTimeframe)
-        },
-      }
-    } catch (error) {
-      console.error("[v0] Error initializing chart:", error)
-    }
-  }
-
-  const fetchData = async () => {
-    if (!seriesRef.current) return
-
-    setLoading(true)
-    try {
-      const response = await fetch(`/api/fmp/historical?symbol=${symbol}&period=15min&limit=500`)
-      if (response.ok) {
-        const data = await response.json()
-
-        let chartData = []
-        if (data.ohlcv && Array.isArray(data.ohlcv)) {
-          chartData = data.ohlcv
-            .map((item: any) => ({
-              time: item.time || Math.floor(new Date(item.date).getTime() / 1000),
-              open: Number.parseFloat(item.open || item.o),
-              high: Number.parseFloat(item.high || item.h),
-              low: Number.parseFloat(item.low || item.l),
-              close: Number.parseFloat(item.close || item.c),
-            }))
-            .sort((a: any, b: any) => a.time - b.time)
-        } else if (Array.isArray(data)) {
-          chartData = data
-            .map((item: any) => ({
-              time: Math.floor(new Date(item.date).getTime() / 1000),
-              open: Number.parseFloat(item.open),
-              high: Number.parseFloat(item.high),
-              low: Number.parseFloat(item.low),
-              close: Number.parseFloat(item.close),
-            }))
-            .sort((a: any, b: any) => a.time - b.time)
-        }
-
-        if (chartData.length > 0 && seriesRef.current && typeof seriesRef.current.setData === "function") {
-          seriesRef.current.setData(chartData)
-          chartRef.current?.timeScale?.fitContent?.()
-
-          if (chartData.length >= 2) {
-            const current = chartData[chartData.length - 1]
-            const previous = chartData[chartData.length - 2]
-            const change = current.close - previous.close
-            const changePercent = (change / previous.close) * 100
-
-            setLastPrice(current.close)
-            setPriceChange(change)
-            setPriceChangePercent(changePercent)
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch chart data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const tvTheme = resolvedTheme === "dark" ? "dark" : "light"
+  const tvSymbol = activeSymbol.tvSymbol
+  const tvInterval = activeTimeframe.interval
+  const localeIsArabic = locale === "ar"
 
   useEffect(() => {
-    if (chartReady) {
-      initChart()
-      return () => {
-        if (chartRef.current && typeof chartRef.current.remove === "function") {
-          chartRef.current.remove()
-        }
-        chartRef.current = null
-        seriesRef.current = null
-      }
+    const container = widgetContainerRef.current
+    if (!container) return
+
+    container.innerHTML = ""
+    setIsLoading(true)
+
+    const widgetWrapper = document.createElement("div")
+    widgetWrapper.className = "tradingview-widget-container h-full w-full"
+
+    const widgetElement = document.createElement("div")
+    widgetElement.className = "tradingview-widget-container__widget"
+    widgetWrapper.appendChild(widgetElement)
+
+    const symbolPath = tvSymbol.replace(":", "-")
+    const copyright = document.createElement("div")
+    copyright.className =
+      "tradingview-widget-copyright text-xs text-muted-foreground px-4 pb-2 pt-3 text-center"
+    copyright.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbolPath}/" rel="noopener" target="_blank">TradingView</a>`
+    widgetWrapper.appendChild(copyright)
+
+    const script = document.createElement("script")
+    script.type = "text/javascript"
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+    script.async = true
+
+    const config = {
+      autosize: true,
+      symbol: tvSymbol,
+      interval: tvInterval,
+      timezone: "Etc/UTC",
+      theme: tvTheme,
+      style: "1",
+      locale: "en",
+      enable_publishing: false,
+      hide_dataset_legend: false,
+      allow_symbol_change: false,
+      calendar: true,
+      support_host: "https://www.tradingview.com",
+      studies: ["MASimple@tv-basicstudies"],
     }
-  }, [isDark, chartReady])
 
-  useEffect(() => {
-    if (chartRef.current && seriesRef.current && chartReady) {
-      fetchData()
+    script.innerHTML = JSON.stringify(config)
+    script.onload = () => {
+      window.setTimeout(() => setIsLoading(false), 600)
     }
-  }, [symbol, timeframe, chartReady])
+    script.onerror = () => setIsLoading(false)
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (chartRef.current && typeof chartRef.current.applyOptions === "function") {
-        chartRef.current.applyOptions({})
-      }
+    widgetWrapper.appendChild(script)
+    container.appendChild(widgetWrapper)
+
+    return () => {
+      container.innerHTML = ""
     }
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
-  const formatPrice = (price: number) => {
-    return price.toFixed(2)
-  }
-
-  if (!chartReady) {
-    return (
-      <ModernPanel>
-        <ModernPanelHeader>
-          <ModernPanelTitle>Loading Chart...</ModernPanelTitle>
-        </ModernPanelHeader>
-        <ModernPanelContent>
-          <div className="flex h-[600px] items-center justify-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        </ModernPanelContent>
-      </ModernPanel>
-    )
-  }
+  }, [tvSymbol, tvInterval, tvTheme, refreshToken])
 
   return (
-    <ModernPanel>
+    <ModernPanel className="overflow-hidden border border-slate-200/70 bg-white/95 shadow-xl dark:border-slate-800/60 dark:bg-slate-900/75">
       <ModernPanelHeader>
-        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <div className="flex items-center space-x-4">
-            <ModernPanelTitle>{symbol}</ModernPanelTitle>
-            {lastPrice && (
-              <div className="flex items-center space-x-2">
-                <span className="font-mono text-lg font-semibold">${formatPrice(lastPrice)}</span>
-                {priceChange !== null && (
-                  <div
-                    className={`flex items-center space-x-1 ${priceChange >= 0 ? "text-green-600" : "text-red-600"}`}
-                  >
-                    {priceChange >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : priceChange < 0 ? (
-                      <TrendingDown className="h-4 w-4" />
-                    ) : (
-                      <Minus className="h-4 w-4" />
-                    )}
-                    <span className="font-mono text-sm">
-                      {priceChange >= 0 ? "+" : ""}${formatPrice(priceChange)} ({priceChangePercent?.toFixed(2)}%)
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <ModernPanelTitle>{activeSymbol.label}</ModernPanelTitle>
+              <Badge
+                variant="outline"
+                className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200"
+              >
+                TradingView
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {localeIsArabic
+                ? "الرسوم البيانية المتقدمة من TradingView مع تحديثات مباشرة في التوقيت العالمي المنسق."
+                : "Advanced TradingView charting with live updates in coordinated universal time."}
+            </p>
+            <p className="text-xs uppercase tracking-widest text-primary">
+              {localeIsArabic ? "بيانات لحظية · UTC" : "Live Data · UTC"}
+            </p>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={symbol} onValueChange={onSymbolChange}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SYMBOLS.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>
-                    {s.label}
+                {SYMBOLS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={timeframe} onValueChange={onTimeframeChange}>
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-[140px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {TIMEFRAMES.map((tf) => (
-                  <SelectItem key={tf.value} value={tf.value}>
-                    {tf.label}
+                {TIMEFRAMES.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {localeIsArabic ? item.labelAr : item.labelEn}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRefreshToken((token) => token + 1)}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
       </ModernPanelHeader>
-      <ModernPanelContent>
-        <div className="space-y-4">
-          <div className="h-[600px] w-full" ref={chartContainerRef} />
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center space-x-4">
-              <Badge variant="outline" className="text-xs">
-                AI Controllable
-              </Badge>
-              <span>Use ChartAPI.addLevel(price) to add levels</span>
+      <ModernPanelContent className="p-0">
+        <div className="relative h-[640px] w-full overflow-hidden rounded-b-3xl border-t border-slate-200/70 dark:border-slate-800/60">
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+              <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+              <span className="text-sm font-medium text-muted-foreground">
+                {localeIsArabic ? "جاري تحميل الرسم البياني..." : "Loading chart..."}
+              </span>
             </div>
-            <div>Powered by LIIRAT</div>
-          </div>
+          )}
+          <div ref={widgetContainerRef} className="h-full w-full" />
         </div>
       </ModernPanelContent>
     </ModernPanel>

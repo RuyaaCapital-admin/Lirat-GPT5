@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Bell, Plus } from "lucide-react"
 import { toast } from "sonner"
+import { convertToEnglishNumbers } from "@/lib/i18n"
 
 interface AlertButtonProps {
   eventTitle: string
@@ -59,18 +60,23 @@ export function AlertButton({ eventTitle, eventTime, symbol, type = "economic" }
             <span>Set Event Alert</span>
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="event-title">Event</Label>
-            <Input id="event-title" value={eventTitle} readOnly className="bg-muted/50" />
-          </div>
-
-          {eventTime && (
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="event-time">Time</Label>
-              <Input id="event-time" value={new Date(eventTime).toLocaleString()} readOnly className="bg-muted/50" />
+              <Label htmlFor="event-title">Event</Label>
+              <Input id="event-title" value={eventTitle} readOnly className="bg-muted/50" />
             </div>
-          )}
+
+            {eventTime && (
+              <div className="space-y-2">
+                <Label htmlFor="event-time">Time</Label>
+                <Input
+                  id="event-time"
+                  value={convertToEnglishNumbers(new Date(eventTime).toLocaleString())}
+                  readOnly
+                  className="bg-muted/50"
+                />
+              </div>
+            )}
 
           {symbol && (
             <div className="space-y-2">

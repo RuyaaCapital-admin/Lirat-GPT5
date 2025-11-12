@@ -1,5 +1,7 @@
 "use client"
 
+import { convertToEnglishNumbers } from "./i18n"
+
 /**
  * Convert UTC time to user's local timezone
  */
@@ -18,15 +20,17 @@ export function convertUTCToLocalTime(dateString: string, timeString?: string): 
     // Get user's timezone offset
     const userLocale = navigator.language || "en-US"
 
-    return date.toLocaleString(userLocale, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZoneName: "short",
-    })
+    return convertToEnglishNumbers(
+      date.toLocaleString(userLocale, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZoneName: "short",
+      }),
+    )
   } catch (error) {
     console.error("[v0] Timezone conversion error:", error)
     return dateString
@@ -47,15 +51,17 @@ export function convertUTCToLocalTimeArabic(dateString: string, timeString?: str
 
     const date = new Date(fullDateTime)
 
-    return date.toLocaleString("ar-SA", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZoneName: "short",
-    })
+    return convertToEnglishNumbers(
+      date.toLocaleString("ar-SA", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZoneName: "short",
+      }),
+    )
   } catch (error) {
     console.error("[v0] Timezone conversion error:", error)
     return dateString

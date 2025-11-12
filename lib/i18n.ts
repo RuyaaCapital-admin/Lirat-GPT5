@@ -147,9 +147,21 @@ export function convertToEnglishNumbers(value: any): string {
     "٤": "4",
     "٥": "5",
     "٦": "6",
-    "٢": "7",
+    "٧": "7",
     "٨": "8",
     "٩": "9",
+    "۰": "0",
+    "۱": "1",
+    "۲": "2",
+    "۳": "3",
+    "۴": "4",
+    "۵": "5",
+    "۶": "6",
+    "۷": "7",
+    "۸": "8",
+    "۹": "9",
+    "٫": ".",
+    "٬": ",",
   }
-  return str.replace(/[٠-٩]/g, (match) => arabicToEnglish[match])
+  return str.replace(/[٠-٩۰-۹٫٬]/g, (match) => arabicToEnglish[match] ?? match)
 }
