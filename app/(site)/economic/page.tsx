@@ -7,13 +7,18 @@ import { CountryFlag } from "@/components/country-flag"
 import { AlertButton } from "@/components/alert-button"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
-import { convertUTCToLocalTime, convertUTCToLocalTimeArabic } from "@/lib/timezone"
+import { convertUTCToLocalTime, convertUTCToLocalTimeArabic, getUserTimezoneAbbr } from "@/lib/timezone"
 import { Clock, Globe, TrendingUp } from "lucide-react"
 
 export default function EconomicPage() {
   const [data, setData] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const { locale } = useLocale()
+  const [timezone, setTimezone] = useState("")
+
+  useEffect(() => {
+    setTimezone(getUserTimezoneAbbr())
+  }, [])
 
   const fetchData = async () => {
     setLoading(true)
@@ -23,9 +28,13 @@ export default function EconomicPage() {
         const result = await response.json()
         console.log("[v0] Economic calendar data:", result.items)
         setData(result.items || [])
+      } else {
+        console.error("Failed to fetch economic data:", response.status)
+        setData([])
       }
     } catch (error) {
       console.error("Failed to fetch economic data:", error)
+      setData([])
     } finally {
       setLoading(false)
     }
@@ -79,7 +88,7 @@ export default function EconomicPage() {
     try {
       const convertedTime =
         locale === "ar" ? convertUTCToLocalTimeArabic(dateStr, timeStr) : convertUTCToLocalTime(dateStr, timeStr)
-      return convertedTime
+      return `${convertedTime} ${timezone}`
     } catch (error) {
       console.error("[v0] Time formatting error:", error)
       return dateStr
@@ -88,7 +97,7 @@ export default function EconomicPage() {
 
   const columns = [
     {
-      accessorKey: "time",
+      accessorKey: "date",
       header: () => (
         <div className="flex items-center space-x-1">
           <Clock className="h-4 w-4" />
@@ -97,7 +106,7 @@ export default function EconomicPage() {
       ),
       cell: ({ row }: { row: any }) => {
         const date = row.getValue("date")
-        const time = row.getValue("time")
+        const time = row.original.time
         return <div className="font-mono text-sm whitespace-nowrap">{formatTime(date, time)}</div>
       },
     },
@@ -113,11 +122,9 @@ export default function EconomicPage() {
         const country = row.getValue("country") || "N/A"
         const countryName = typeof country === "string" ? country : String(country)
 
-        console.log("[v0] Rendering flag for country:", countryName)
-
         return (
           <div className="flex items-center space-x-2">
-            <CountryFlag countryCode={countryName} countryName={countryName} size="sm" />
+            <CountryFlag countryCode={row.original.countryCode} countryName={countryName} size="sm" />
             <span className="font-medium text-sm line-clamp-1">{countryName}</span>
           </div>
         )
@@ -178,11 +185,11 @@ export default function EconomicPage() {
     },
     {
       id: "actions",
-      header: "Alert",
+      header: getTranslation(locale, "addAlert"),
       cell: ({ row }: { row: any }) => (
         <AlertButton
           eventTitle={row.getValue("event") || "Economic Event"}
-          eventTime={row.getValue("time")}
+          eventTime={row.original.time}
           type="economic"
         />
       ),

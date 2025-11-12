@@ -55,7 +55,7 @@ export const translations = {
     tradingSignals: "Trading Signals",
 
     // Additional translations
-    addAlert: "Add Alert",
+    addAlert: "Alert",
     searchSymbols: "Search symbols...",
     selectSymbol: "Select Symbol",
     noSymbolsFound: "No symbols found",
@@ -115,7 +115,7 @@ export const translations = {
     tradingSignals: "إشارات التداول",
 
     // Additional translations
-    addAlert: "إضافة تنبيه",
+    addAlert: "تنبيه",
     searchSymbols: "البحث عن الرموز...",
     selectSymbol: "اختر الرمز",
     noSymbolsFound: "لم يتم العثور على رموز",

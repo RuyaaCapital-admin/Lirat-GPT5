@@ -19,10 +19,15 @@ export default function FinancialPage() {
       const response = await fetch("/api/fmp/news", { cache: "no-store" })
       if (response.ok) {
         const result = await response.json()
+        console.log("[v0] Financial news data:", result.items)
         setData(result.items || [])
+      } else {
+        console.error("Failed to fetch financial data:", response.status)
+        setData([])
       }
     } catch (error) {
       console.error("Failed to fetch financial data:", error)
+      setData([])
     } finally {
       setLoading(false)
     }
@@ -41,19 +46,19 @@ export default function FinancialPage() {
         if (polarity === "positive" || polarity === "1" || sentiment.polarity > 0) {
           return (
             <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-              Positive
+              {locale === "ar" ? "إيجابي" : "Positive"}
             </Badge>
           )
         } else if (polarity === "negative" || polarity === "-1" || sentiment.polarity < 0) {
           return (
             <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-              Negative
+              {locale === "ar" ? "سلبي" : "Negative"}
             </Badge>
           )
         } else {
           return (
             <Badge variant="outline" className="text-xs">
-              Neutral
+              {locale === "ar" ? "محايد" : "Neutral"}
             </Badge>
           )
         }
@@ -68,25 +73,24 @@ export default function FinancialPage() {
         if (pos > neg && pos > neu) {
           return (
             <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-              Positive ({(pos * 100).toFixed(0)}%)
+              {locale === "ar" ? "إيجابي" : "Positive"} ({(pos * 100).toFixed(0)}%)
             </Badge>
           )
         } else if (neg > pos && neg > neu) {
           return (
             <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-              Negative ({(neg * 100).toFixed(0)}%)
+              {locale === "ar" ? "سلبي" : "Negative"} ({(neg * 100).toFixed(0)}%)
             </Badge>
           )
         } else {
           return (
             <Badge variant="outline" className="text-xs">
-              Neutral ({(neu * 100).toFixed(0)}%)
+              {locale === "ar" ? "محايد" : "Neutral"} ({(neu * 100).toFixed(0)}%)
             </Badge>
           )
         }
       }
 
-      // Fallback for unknown object structure
       return (
         <Badge variant="outline" className="text-xs">
           N/A
@@ -103,7 +107,7 @@ export default function FinancialPage() {
       case "1":
         return (
           <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-700 dark:text-green-400">
-            Positive
+            {locale === "ar" ? "إيجابي" : "Positive"}
           </Badge>
         )
       case "negative":
@@ -111,14 +115,14 @@ export default function FinancialPage() {
       case "-1":
         return (
           <Badge variant="secondary" className="text-xs bg-red-500/10 text-red-700 dark:text-red-400">
-            Negative
+            {locale === "ar" ? "سلبي" : "Negative"}
           </Badge>
         )
       case "neutral":
       case "0":
         return (
           <Badge variant="outline" className="text-xs">
-            Neutral
+            {locale === "ar" ? "محايد" : "Neutral"}
           </Badge>
         )
       default:
@@ -139,6 +143,7 @@ export default function FinancialPage() {
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
     } catch {
       return timeStr
@@ -147,17 +152,19 @@ export default function FinancialPage() {
 
   const columns = [
     {
-      accessorKey: "ts",
+      accessorKey: "publishedDate",
       header: () => (
         <div className="flex items-center space-x-1">
           <Clock className="h-4 w-4" />
           <span>{getTranslation(locale, "time")}</span>
         </div>
       ),
-      cell: ({ row }: { row: any }) => <div className="font-mono text-sm">{formatTime(row.getValue("ts"))}</div>,
+      cell: ({ row }: { row: any }) => (
+        <div className="font-mono text-sm whitespace-nowrap">{formatTime(row.getValue("publishedDate"))}</div>
+      ),
     },
     {
-      accessorKey: "headline",
+      accessorKey: "title",
       header: () => (
         <div className="flex items-center space-x-1">
           <Newspaper className="h-4 w-4" />
@@ -167,7 +174,7 @@ export default function FinancialPage() {
       cell: ({ row }: { row: any }) => (
         <div className="max-w-[500px]">
           <div className="font-medium line-clamp-3 break-words overflow-hidden text-ellipsis">
-            {row.getValue("headline") || "N/A"}
+            {row.getValue("title") || "N/A"}
           </div>
         </div>
       ),
@@ -198,11 +205,11 @@ export default function FinancialPage() {
     },
     {
       id: "actions",
-      header: "Alert",
+      header: getTranslation(locale, "addAlert"),
       cell: ({ row }: { row: any }) => (
         <AlertButton
-          eventTitle={row.getValue("headline") || "Financial News"}
-          eventTime={row.getValue("ts")}
+          eventTitle={row.getValue("title") || "Financial News"}
+          eventTime={row.getValue("publishedDate")}
           symbol={row.getValue("symbol")}
           type="financial"
         />
@@ -220,6 +227,14 @@ export default function FinancialPage() {
             : "Latest financial news and market updates from trusted sources worldwide"}
         </p>
       </div>
+
+      {data.length === 0 && !loading && (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">
+            {locale === "ar" ? "لا توجد أخبار متاحة الآن" : "No news available at this time"}
+          </p>
+        </div>
+      )}
 
       <DataTable
         columns={columns}
