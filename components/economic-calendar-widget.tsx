@@ -246,7 +246,7 @@ function EconomicCalendarWidgetComponent() {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 80px;
+          height: 110px;
           background: linear-gradient(to top,
             rgba(242, 248, 244, 0.98) 0%,
             rgba(242, 248, 244, 0.82) 55%,
@@ -259,12 +259,37 @@ function EconomicCalendarWidgetComponent() {
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          padding-bottom: 16px;
+          padding-bottom: 18px;
           user-select: none;
           touch-action: none;
           -webkit-user-select: none;
           -moz-user-select: none;
           -ms-user-select: none;
+        }
+
+        .bottom-blocker::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(to top, rgba(242, 248, 244, 0.96), transparent 70%);
+          pointer-events: none;
+        }
+
+        .bottom-blocker::after {
+          content: "";
+          position: absolute;
+          bottom: 14px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 170px;
+          height: 54px;
+          background-image: url("/images/liirat-logo.png");
+          background-size: contain;
+          background-repeat: no-repeat;
+          background-position: center;
+          opacity: 0.45;
+          pointer-events: none;
+          filter: saturate(0.8);
         }
 
         .liirat-branding {
@@ -334,8 +359,8 @@ function EconomicCalendarWidgetComponent() {
             min-height: 700px !important;
           }
           .bottom-blocker {
-            height: 78px;
-            padding-bottom: 12px;
+            height: 98px;
+            padding-bottom: 14px;
           }
           .liirat-branding {
             font-size: 14px;
@@ -385,6 +410,11 @@ function EconomicCalendarWidgetComponent() {
               rgba(10, 18, 28, 0.48) 80%,
               rgba(10, 18, 28, 0) 100%
             );
+          }
+
+          .bottom-blocker::after {
+            opacity: 0.35;
+            filter: brightness(1.2);
           }
 
           .liirat-branding {

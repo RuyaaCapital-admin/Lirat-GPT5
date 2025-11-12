@@ -55,9 +55,6 @@ export function Navigation() {
         <div className={cn("flex items-center gap-3", rtl && "flex-row-reverse gap-3")}>
           <Link href="/" className="flex items-center gap-3">
             <LiiratLogo size="md" showText={true} />
-            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
-              {locale === "ar" ? "الأسواق" : "Markets Edition"}
-            </span>
           </Link>
         </div>
 

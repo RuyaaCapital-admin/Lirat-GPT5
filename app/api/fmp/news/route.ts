@@ -47,6 +47,13 @@ async function translateText(text: string, target: Locale): Promise<string> {
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const localeParam = url.searchParams.get("locale")
+  const limitParam = url.searchParams.get("limit")
+  const limit = (() => {
+    if (!limitParam) return 50
+    const parsed = Number.parseInt(limitParam, 10)
+    if (Number.isNaN(parsed) || parsed <= 0) return 50
+    return Math.min(parsed, 100)
+  })()
   const locale: Locale = localeParam === "ar" ? "ar" : "en"
   const token = process.env.FMP_API_KEY
   if (!token) {
@@ -54,7 +61,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const requestUrl = `https://financialmodelingprep.com/stable/news/stock-latest?limit=50&apikey=${token}`
+    const requestUrl = `https://financialmodelingprep.com/stable/news/stock-latest?limit=${limit}&apikey=${token}`
 
     console.log("[v0] Fetching FMP financial news")
 

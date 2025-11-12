@@ -138,14 +138,18 @@ export default function FinancialPage() {
     if (!timeStr) return "N/A"
     try {
       const date = new Date(timeStr)
-      const formatted = date.toLocaleString(locale === "ar" ? "ar-SA" : "en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      })
-      return convertToEnglishNumbers(formatted)
+      const formatter = new Intl.DateTimeFormat(
+        locale === "ar" ? "ar-EG-u-ca-gregory-nu-latn" : "en-GB",
+        {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        },
+      )
+      return convertToEnglishNumbers(formatter.format(date))
     } catch {
       return convertToEnglishNumbers(timeStr)
     }

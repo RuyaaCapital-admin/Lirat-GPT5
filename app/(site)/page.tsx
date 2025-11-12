@@ -2,13 +2,12 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowUpRight, BarChart2, Globe2, ChartCandlestick, ShieldCheck } from "lucide-react"
+import { ArrowUpRight, BarChart2 } from "lucide-react"
 import EconomicCalendarWidget from "@/components/economic-calendar-widget"
 import { MarketOverviewCard } from "@/components/dashboard/market-overview-card"
-import { NewsPreviewCard } from "@/components/dashboard/news-preview-card"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ExchangeRatesPanel } from "@/components/dashboard/exchange-rates"
+import { HomeNewsRail } from "@/components/dashboard/home-news"
 import { useLocale } from "@/hooks/use-locale"
-import { getTranslation } from "@/lib/i18n"
 
 const heroMetrics = [
   {
@@ -16,42 +15,21 @@ const heroMetrics = [
     labelEn: "Markets monitored",
     labelAr: "أسواق تحت المراقبة",
     accent: "from-emerald-400/70 to-emerald-500/60",
+    href: "/markets",
   },
   {
     value: "45",
     labelEn: "Economic calendars",
     labelAr: "تقويمات اقتصادية نشطة",
     accent: "from-lime-400/70 to-lime-500/50",
+    href: "/economic",
   },
   {
     value: "24/7",
-    labelEn: "Sentiment radar",
-    labelAr: "رادار المشاعر",
+    labelEn: "Editorial coverage",
+    labelAr: "تغطية تحريرية",
     accent: "from-sky-400/70 to-sky-500/60",
-  },
-]
-
-const insightCards = [
-  {
-    titleEn: "Macro Radar",
-    titleAr: "رادار الاقتصاد الكلي",
-    descriptionEn: "Every major event translated and contextualised for traders who move fast.",
-    descriptionAr: "كل حدث اقتصادي رئيسي مترجم ومفصل ليستفيد منه المتداول السريع.",
-    icon: Globe2,
-  },
-  {
-    titleEn: "Precision Calendar",
-    titleAr: "تقويم دقيق",
-    descriptionEn: "Transparent timelines with Liirat’s shield overlay to protect your focus.",
-    descriptionAr: "جداول زمنية واضحة مع حماية ليرات للحفاظ على تركيزك.",
-    icon: ShieldCheck,
-  },
-  {
-    titleEn: "Live Market Tape",
-    titleAr: "شريط السوق المباشر",
-    descriptionEn: "TradingView charts, curated watchlists, and instant sentiment in one pane.",
-    descriptionAr: "رسوم TradingView، قوائم مختارة، ومشاعر فورية في لوحة واحدة.",
-    icon: ChartCandlestick,
+    href: "/financial",
   },
 ]
 
@@ -69,16 +47,13 @@ export default function Dashboard() {
         </div>
         <div className="relative flex flex-col gap-10 p-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-6 lg:max-w-xl">
-            <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-widest text-primary dark:bg-primary/15 dark:text-primary-foreground/80">
-              {isArabic ? "منصة ليرات للأسواق" : "Liirat Market Suite"}
-            </span>
             <h1 className="text-4xl font-bold leading-tight text-foreground md:text-[44px]">
-              {isArabic ? "اقتصاد واضح. تداول أنيق." : "Clarity for macro moves. Elegance for traders."}
+              {isArabic ? "تداول متقن وإشارات واضحة." : "Elegant trading, translated clarity."}
             </h1>
             <p className="text-base text-muted-foreground md:text-lg">
               {isArabic
-                ? "منصة ليرات تجمع الاتجاهات الاقتصادية، التقويم الفوري، وأدوات التداول المتقدمة في تجربة واحدة راقية."
-                : "Liirat brings macro signals, a live economic calendar, and advanced trading tools together inside a single, polished experience."}
+                ? "أهم المؤشرات الاقتصادية، تحركات الليرة، ورسوم الأسواق المتقدمة في لوحة راقية وسهلة."
+                : "Macro indicators, lira flows, and advanced market views—curated into a single refined workspace."}
             </p>
             <div className="flex flex-wrap gap-3">
               <Link
@@ -92,22 +67,21 @@ export default function Dashboard() {
                 href="/markets"
                 className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-white/80 px-5 py-2.5 text-sm font-semibold text-primary transition-colors duration-200 hover:border-primary hover:text-primary dark:border-primary/40 dark:bg-background/70 dark:text-primary-foreground"
               >
-                {isArabic ? "انتقل إلى لوحة الأسواق" : "Open market workspace"}
+                {isArabic ? "افتح لوحة الأسواق" : "Open market workspace"}
                 <ArrowUpRight className="h-4 w-4" />
               </Link>
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {heroMetrics.map((metric) => (
-                <div
+                <Link
                   key={metric.value}
-                  className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-background/70 dark:shadow-[0_16px_40px_rgba(2,6,23,0.55)]"
+                  href={metric.href}
+                  className="rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/70 dark:shadow-[0_16px_40px_rgba(2,6,23,0.55)]"
                 >
                   <div className={`mb-3 h-0.5 w-12 rounded-full bg-gradient-to-r ${metric.accent}`} />
                   <div className="text-2xl font-semibold text-foreground">{metric.value}</div>
-                  <p className="text-sm text-muted-foreground">
-                    {isArabic ? metric.labelAr : metric.labelEn}
-                  </p>
-                </div>
+                  <p className="text-sm text-muted-foreground">{isArabic ? metric.labelAr : metric.labelEn}</p>
+                </Link>
               ))}
             </div>
           </div>
@@ -126,29 +100,6 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Insights */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {insightCards.map((card) => (
-          <Card
-            key={card.titleEn}
-            className="relative overflow-hidden rounded-3xl border border-white/65 bg-white/80 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/75 dark:shadow-[0_22px_60px_rgba(2,6,23,0.6)]"
-          >
-            <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/40 via-transparent to-primary/30" />
-            <CardHeader className="space-y-3 pb-2">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-primary/15 dark:text-primary-foreground/90">
-                <card.icon className="h-5 w-5" />
-              </div>
-              <CardTitle className="text-lg font-semibold text-foreground">
-                {isArabic ? card.titleAr : card.titleEn}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm leading-relaxed text-muted-foreground">
-              {isArabic ? card.descriptionAr : card.descriptionEn}
-            </CardContent>
-          </Card>
-        ))}
-      </section>
-
       {/* Calendar */}
       <section className="space-y-6 rounded-[36px] border border-white/60 bg-white/90 p-6 shadow-[0_32px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-background/75 dark:shadow-[0_30px_90px_rgba(2,6,23,0.65)] md:p-8">
         <div className="flex flex-col gap-4 border-b border-white/60 pb-6 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
@@ -162,8 +113,8 @@ export default function Dashboard() {
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
               {isArabic
-                ? "حافظ على تركيزك مع تقويم ليرات المدمج. يتم تحميل البيانات مباشرة ويستجيب للغة الواجهة، مع إخفاء كل العلامات الخارجية."
-                : "Stay focused with the embedded Liirat calendar. It loads live data in your chosen language while masking every external brand layer."}
+                ? "كل الإعلانات الاقتصادية الهامة تُترجم مباشرة وتُعرض في مخطط واحد سريع الاستجابة للغة الواجهة."
+                : "Every market-moving announcement translated on the fly and arranged in a single, responsive timeline."}
             </p>
           </div>
           <Link
@@ -185,12 +136,8 @@ export default function Dashboard() {
           <MarketOverviewCard />
         </div>
         <div className="space-y-6">
-          <NewsPreviewCard type="economic" title={getTranslation(locale, "economicCalendar")} href="/economic" />
-          <NewsPreviewCard
-            type="financial"
-            title={isArabic ? "أخبار ليرات المختارة" : "Liirat curated news"}
-            href="/financial"
-          />
+          <ExchangeRatesPanel />
+          <HomeNewsRail />
         </div>
       </section>
     </div>

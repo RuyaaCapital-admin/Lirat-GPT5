@@ -11,7 +11,6 @@ import {
 } from "@/components/modern-panel"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { RefreshCw } from "lucide-react"
 
 interface TradingChartProps {
@@ -84,12 +83,11 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
     widgetElement.className = "tradingview-widget-container__widget"
     widgetWrapper.appendChild(widgetElement)
 
-    const symbolPath = tvSymbol.replace(":", "-")
     const copyright = document.createElement("div")
     copyright.className =
       "tradingview-widget-copyright text-xs text-muted-foreground px-4 pb-2 pt-3 text-center"
     copyright.style.display = "none"
-    copyright.innerHTML = `<a href="https://www.tradingview.com/symbols/${symbolPath}/" rel="noopener" target="_blank">TradingView</a>`
+    copyright.innerHTML = ""
     widgetWrapper.appendChild(copyright)
 
     const script = document.createElement("script")
@@ -132,19 +130,11 @@ export function TradingChart({ symbol, onSymbolChange, timeframe, onTimeframeCha
       <ModernPanelHeader>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <ModernPanelTitle>{activeSymbol.label}</ModernPanelTitle>
-              <Badge
-                variant="outline"
-                className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200"
-              >
-                TradingView
-              </Badge>
-            </div>
+            <ModernPanelTitle>{activeSymbol.label}</ModernPanelTitle>
             <p className="text-sm text-muted-foreground">
               {localeIsArabic
-                ? "الرسوم البيانية المتقدمة من TradingView مع تحديثات مباشرة في التوقيت العالمي المنسق."
-                : "Advanced TradingView charting with live updates in coordinated universal time."}
+                ? "رسم بياني متقدم مع تحديثات لحظية على التوقيت العالمي المنسق."
+                : "Advanced charting with live updates in coordinated universal time."}
             </p>
             <p className="text-xs uppercase tracking-widest text-primary">
               {localeIsArabic ? "بيانات لحظية · UTC" : "Live Data · UTC"}
