@@ -1,10 +1,17 @@
-# Agent Builder Function Tools Setup Guide
+# OpenAI ChatKit Agent Builder Function Tools Setup Guide
 
-This guide explains how to connect your FMP Premium API endpoints to OpenAI ChatKit Agent Builder as function tools, while keeping the agent conversational and fast.
+This guide explains how to connect your FMP Premium API endpoints to **OpenAI's ChatKit Agent Builder** (inside OpenAI Platform) as function tools, while keeping the agent conversational and fast.
+
+## Important: Agent Builder Location
+
+**Agent Builder is part of OpenAI Platform**, not a separate service:
+- Access it at: https://platform.openai.com/chatkit/agent-builder
+- It's built into ChatKit/OpenAI Platform
+- Function tools are configured directly in OpenAI's interface
 
 ## Overview
 
-Your agent will have access to three main function tools:
+Your ChatKit agent will have access to three main function tools:
 1. **get_price** - Real-time price data
 2. **get_signal** - Trading signals and technical analysis
 3. **get_news** - Latest financial news
@@ -99,11 +106,18 @@ All endpoints are ready and deployed:
 }
 ```
 
-## Setting Up in Agent Builder
+## Setting Up in OpenAI Agent Builder
 
-### Step 1: Add Function Tools
+### Step 1: Access Agent Builder
 
-In your ChatKit workflow (Agent Builder), add three Function nodes:
+1. Go to **OpenAI Platform**: https://platform.openai.com
+2. Navigate to **ChatKit** → **Agent Builder**
+3. Open your existing workflow (or create a new one)
+4. The workflow ID you're using: `wf_68fa5dfe9d2c8190a491802fdc61f86201d5df9b9d3ae103`
+
+### Step 2: Add Function Tools
+
+In your ChatKit Agent Builder workflow (inside OpenAI Platform), add three Function nodes:
 
 #### Function 1: `get_price`
 
@@ -127,11 +141,12 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
   "required": ["symbol"]
 }
 ```
-4. **API Configuration:**
+4. **API Configuration (in OpenAI Agent Builder):**
    - **Method:** GET
-   - **URL:** `https://your-domain.vercel.app/api/fmp/price`
+   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price`
    - **Query Parameters:** `symbol={{symbol}}`
    - **Headers:** None required
+   - **Note:** In Agent Builder, you'll configure this as an "HTTP Function" or "API Function"
 
 #### Function 2: `get_signal`
 
@@ -162,11 +177,12 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
   "required": ["symbol"]
 }
 ```
-4. **API Configuration:**
+4. **API Configuration (in OpenAI Agent Builder):**
    - **Method:** GET
-   - **URL:** `https://your-domain.vercel.app/api/fmp/signal`
+   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/signal`
    - **Query Parameters:** `symbol={{symbol}}&timeframe={{timeframe}}`
    - **Headers:** None required
+   - **Note:** In Agent Builder, configure as an "HTTP Function" or "API Function"
 
 #### Function 3: `get_news`
 
@@ -196,15 +212,16 @@ Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto new
   }
 }
 ```
-4. **API Configuration:**
+4. **API Configuration (in OpenAI Agent Builder):**
    - **Method:** GET
-   - **URL:** `https://your-domain.vercel.app/api/fmp/news`
+   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/news`
    - **Query Parameters:** `symbol={{symbol}}&limit={{limit}}`
    - **Headers:** None required
+   - **Note:** In Agent Builder, configure as an "HTTP Function" or "API Function"
 
-### Step 2: Update System Prompt
+### Step 3: Update System Prompt in Agent Builder
 
-Add this to your Agent Builder system prompt to make the agent conversational and smart about when to use functions:
+In your OpenAI Agent Builder workflow, update the system prompt (usually in the "Assistant" or "System" node) to make the agent conversational and smart about when to use functions:
 
 ```
 You are a friendly, conversational AI trading assistant for LIIRAT. You help users with market data, trading signals, and financial news.
@@ -234,17 +251,19 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
 - User: "What do you think about the market?" → Respond conversationally without calling functions (unless they ask for specific data)
 ```
 
-### Step 3: Test Your Functions
+### Step 4: Test Your Functions
 
-1. **Test in Agent Builder:**
-   - Use the "Test" feature in Agent Builder
+1. **Test in OpenAI Agent Builder:**
+   - Use the "Test" or "Preview" feature in OpenAI's Agent Builder interface
    - Try: "What's the price of AAPL?"
    - Try: "What's the signal for TSLA?"
    - Try: "Show me the latest news"
+   - Verify that functions are called only when needed (not for "hello" or general chat)
 
-2. **Verify API Endpoints:**
-   - Visit: `https://your-domain.vercel.app/api/fmp/price?symbol=AAPL`
+2. **Verify API Endpoints (Test Before Adding to Agent Builder):**
+   - Test directly: `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price?symbol=AAPL`
    - Should return JSON with price data
+   - If endpoints work, then add them to Agent Builder
 
 ## Latency Optimization
 
@@ -282,12 +301,26 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
 - Verify FMP API is returning data for that symbol
 - Check API endpoint logs for errors
 
-## Production Domain
+## Important Notes
 
-Update the function URLs when deploying to production:
+### Where to Configure Functions
+
+- **All function configuration happens inside OpenAI Platform** → ChatKit → Agent Builder
+- Your backend API endpoints (on Vercel) are just HTTP endpoints that Agent Builder calls
+- You don't need any external Agent Builder tool - everything is in OpenAI's interface
+
+### Production Domain Update
+
+When you switch to production domain, update the function URLs in OpenAI Agent Builder:
 
 - **Current:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app`
 - **Future:** `https://liiratnews.com`
 
-Replace `your-domain.vercel.app` in all function configurations with your actual domain.
+To update: Go to Agent Builder → Edit each function → Update the URL → Save workflow
+
+### Workflow ID
+
+Your current ChatKit workflow ID: `wf_68fa5dfe9d2c8190a491802fdc61f86201d5df9b9d3ae103`
+
+This is configured in your `.env.local` as `CHATKIT_WORKFLOW_ID`.
 
