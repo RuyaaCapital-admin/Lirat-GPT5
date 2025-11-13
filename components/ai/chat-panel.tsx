@@ -1,9 +1,16 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useChatKit, ChatKit } from "@openai/chatkit-react"
 import { chatkitOptions } from "@/lib/chatkitOptions"
 
 export function LiiratChatPanel() {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const { control } = useChatKit({
     ...chatkitOptions,
     api: {
@@ -22,6 +29,10 @@ export function LiiratChatPanel() {
       },
     },
   })
+
+  if (!isMounted) {
+    return <div className="w-full h-full" />
+  }
 
   return (
     <div className="w-full h-full">
