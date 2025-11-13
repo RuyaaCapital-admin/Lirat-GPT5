@@ -31,6 +31,7 @@ export async function POST() {
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "OpenAI-Beta": "chatkit_beta=v1", // REQUIRED for ChatKit API
       },
       body: JSON.stringify({
         workflow: {
