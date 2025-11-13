@@ -107,10 +107,10 @@ export function ExchangeRatesPanel() {
             </h3>
           </div>
           <Link
-            href="/markets"
+            href="/ai"
             className="inline-flex items-center gap-2 rounded-full border border-primary/25 px-4 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:text-primary dark:border-primary/40 dark:text-primary-foreground/80"
           >
-            {locale === "ar" ? "المزيد في لوحة الأسواق" : "More inside markets"}
+            {locale === "ar" ? "تحكم عبر الوكيل الذكي" : "Control with the AI agent"}
             <ArrowUpRight className="h-4 w-4" />
           </Link>
         </div>
@@ -123,9 +123,8 @@ export function ExchangeRatesPanel() {
             const pairLabel = row.pair.replace("-", " / ")
 
             return (
-              <Link
+              <div
                 key={row.id}
-                href={`/markets?base=${row.pair}`}
                 className={cn(
                   "group relative flex items-center justify-between gap-6 overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/80 dark:shadow-[0_24px_70px_rgba(2,6,23,0.55)]",
                 )}
@@ -138,9 +137,7 @@ export function ExchangeRatesPanel() {
                     {pairLabel.split(" / ")[0]}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      {locale === "ar" ? row.labelAr : row.labelEn}
-                    </p>
+                    <p className="text-sm font-semibold text-muted-foreground">{locale === "ar" ? row.labelAr : row.labelEn}</p>
                     <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground/70">
                       {convertToEnglishNumbers(pairLabel)}
                     </p>
@@ -158,9 +155,8 @@ export function ExchangeRatesPanel() {
                   >
                     {formattedChange === "—" ? formattedChange : `${positive ? "+" : ""}${formattedChange}%`}
                   </span>
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-hover:-translate-y-1 group-hover:translate-x-1 group-hover:text-primary" />
                 </div>
-              </Link>
+              </div>
             )
           })}
         </div>
@@ -177,5 +173,5 @@ export function ExchangeRatesPanel() {
         )}
       </div>
     </div>
-  )
+    )
 }
