@@ -231,13 +231,23 @@ class FmpRatesManager extends EventEmitter {
       console.warn(
         "[fmpClient] Missing FMP_API_KEY. Live board data will fall back to cached placeholders until the key is configured.",
       )
+      return
     }
 
-    if (this.apiKey) {
+    // Only initialize WebSocket at runtime, not during build/SSR
+    // WebSocket connection will be established lazily when needed
+    if (typeof window !== "undefined" || (typeof process !== "undefined" && process.env.NODE_ENV !== "production")) {
+      // Only in browser or non-production server environment
       this.ensureSnapshot().catch((error) => {
         console.error("[fmpClient] Initial snapshot failed:", error)
       })
-      this.connectWebSocket()
+      // Delay WebSocket connection to avoid build-time errors
+      if (typeof window !== "undefined") {
+        // Browser only - use setTimeout to ensure it's after page load
+        setTimeout(() => {
+          this.connectWebSocket()
+        }, 0)
+      }
     }
   }
 
@@ -394,6 +404,11 @@ class FmpRatesManager extends EventEmitter {
   }
 
   private connectWebSocket() {
+    // Only connect in browser environment, not during build/SSR
+    if (typeof window === "undefined") {
+      return
+    }
+
     if (!this.apiKey || typeof WebSocket === "undefined") {
       return
     }
@@ -412,45 +427,56 @@ class FmpRatesManager extends EventEmitter {
       this.ws = null
     }
 
-    const url = `${this.streamUrl}?apikey=${this.apiKey}`
-    const ws = new WebSocket(url)
-    this.ws = ws
+    try {
+      const url = `${this.streamUrl}?apikey=${this.apiKey}`
+      const ws = new WebSocket(url)
+      this.ws = ws
 
       ws.addEventListener("open", () => {
         this.wsConnected = true
         this.retryCount = 0
         this.reconnectDelay = BACKOFF_BASE_MS
-      const symbols = Object.keys(STREAM_SYMBOL_MAP)
-      const payload = {
-        event: "subscribe",
-        symbols,
-      }
-      try {
-        ws.send(JSON.stringify(payload))
-        log("Subscribed to FMP stream:", symbols.join(", "))
-      } catch (error) {
-        console.error("[fmpClient] Failed to send subscribe payload:", error)
-      }
-    })
+        const symbols = Object.keys(STREAM_SYMBOL_MAP)
+        const payload = {
+          event: "subscribe",
+          symbols,
+        }
+        try {
+          ws.send(JSON.stringify(payload))
+          log("Subscribed to FMP stream:", symbols.join(", "))
+        } catch (error) {
+          console.error("[fmpClient] Failed to send subscribe payload:", error)
+        }
+      })
 
-    ws.addEventListener("message", (event) => {
-      this.handleStreamMessage(String(event.data))
-    })
+      ws.addEventListener("message", (event) => {
+        this.handleStreamMessage(String(event.data))
+      })
 
-    ws.addEventListener("close", () => {
+      ws.addEventListener("close", () => {
+        this.wsConnected = false
+        this.scheduleReconnect()
+      })
+
+      ws.addEventListener("error", (error) => {
+        // Only log errors in development, don't crash the app
+        if (process.env.NODE_ENV === "development") {
+          console.error("[fmpClient] WebSocket error:", error)
+        }
+        this.wsConnected = false
+        try {
+          ws.close()
+        } catch {
+          // ignore
+        }
+      })
+    } catch (error) {
+      // Gracefully handle WebSocket initialization errors
+      if (process.env.NODE_ENV === "development") {
+        console.error("[fmpClient] Failed to create WebSocket:", error)
+      }
       this.wsConnected = false
-      this.scheduleReconnect()
-    })
-
-    ws.addEventListener("error", (error) => {
-      console.error("[fmpClient] WebSocket error:", error)
-      this.wsConnected = false
-      try {
-        ws.close()
-      } catch {
-        // ignore
-      }
-    })
+    }
   }
 
   private handleStreamMessage(raw: string) {

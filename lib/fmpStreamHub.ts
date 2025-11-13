@@ -60,7 +60,13 @@ class FmpStreamHub extends EventEmitter {
       return
     }
 
-    this.connect()
+    // Only connect in browser environment, not during build/SSR
+    if (typeof window !== "undefined") {
+      // Delay connection to avoid build-time errors
+      setTimeout(() => {
+        this.connect()
+      }, 0)
+    }
   }
 
   subscribe(rawSymbol: string, listener: StreamListener) {
@@ -95,6 +101,11 @@ class FmpStreamHub extends EventEmitter {
   }
 
   private connect() {
+    // Only connect in browser environment, not during build/SSR
+    if (typeof window === "undefined") {
+      return
+    }
+
     if (!this.apiKey) return
 
     if (this.ws) {
@@ -106,40 +117,51 @@ class FmpStreamHub extends EventEmitter {
       this.ws = null
     }
 
-    const url = `${this.streamUrl}?apikey=${this.apiKey}`
-    const ws = new WebSocket(url)
-    this.ws = ws
+    try {
+      const url = `${this.streamUrl}?apikey=${this.apiKey}`
+      const ws = new WebSocket(url)
+      this.ws = ws
 
-    ws.addEventListener("open", () => {
-      this.connected = true
-      this.reconnectDelay = BACKOFF_BASE_MS
-      const symbols = Array.from(this.symbolListeners.keys())
-      if (symbols.length > 0) {
-        this.sendSubscribe(...symbols)
+      ws.addEventListener("open", () => {
+        this.connected = true
+        this.reconnectDelay = BACKOFF_BASE_MS
+        const symbols = Array.from(this.symbolListeners.keys())
+        if (symbols.length > 0) {
+          this.sendSubscribe(...symbols)
+        }
+        this.emit("open")
+      })
+
+      ws.addEventListener("message", (event) => {
+        this.handleMessage(String(event.data))
+      })
+
+      ws.addEventListener("error", (error) => {
+        // Only log errors in development, don't crash the app
+        if (process.env.NODE_ENV === "development") {
+          console.error("[fmpStreamHub] WebSocket error:", error)
+        }
+        this.connected = false
+        this.emit("error", error)
+        try {
+          ws.close()
+        } catch {
+          // ignore
+        }
+      })
+
+      ws.addEventListener("close", () => {
+        this.connected = false
+        this.emit("close")
+        this.scheduleReconnect()
+      })
+    } catch (error) {
+      // Gracefully handle WebSocket initialization errors
+      if (process.env.NODE_ENV === "development") {
+        console.error("[fmpStreamHub] Failed to create WebSocket:", error)
       }
-      this.emit("open")
-    })
-
-    ws.addEventListener("message", (event) => {
-      this.handleMessage(String(event.data))
-    })
-
-    ws.addEventListener("error", (error) => {
-      console.error("[fmpStreamHub] WebSocket error:", error)
       this.connected = false
-      this.emit("error", error)
-      try {
-        ws.close()
-      } catch {
-        // ignore
-      }
-    })
-
-    ws.addEventListener("close", () => {
-      this.connected = false
-      this.emit("close")
-      this.scheduleReconnect()
-    })
+    }
   }
 
   private scheduleReconnect() {
