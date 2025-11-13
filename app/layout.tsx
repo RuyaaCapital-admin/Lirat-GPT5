@@ -53,6 +53,15 @@ export default function RootLayout({
           <Script
             src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
             strategy="afterInteractive"
+            onLoad={() => {
+              // Script loaded - ChatKit will be available on window.ChatKit
+              if (typeof window !== "undefined") {
+                console.log("[ChatKit] Script loaded successfully")
+              }
+            }}
+            onError={(e) => {
+              console.error("[ChatKit] Failed to load script:", e)
+            }}
           />
         </body>
       </html>

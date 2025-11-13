@@ -1,12 +1,21 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
+import dynamic from "next/dynamic"
 import { ChatInterface } from "@/components/ai/chat-interface"
 import { QuickActions } from "@/components/ai/quick-actions"
 import { AiChartPlaceholder } from "@/components/ai/chart-placeholder"
-import { LiiratChatBubble } from "@/components/ai/chat-bubble"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
+
+// Dynamically import ChatKit bubble with SSR disabled to prevent hydration errors
+const LiiratChatBubble = dynamic(
+  () => import("@/components/ai/chat-bubble").then((mod) => ({ default: mod.LiiratChatBubble })),
+  {
+    ssr: false,
+    loading: () => null, // Don't show anything while loading
+  }
+)
 
 const CHART_TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"] as const
 type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]
@@ -49,7 +58,7 @@ export default function AIPage() {
     <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
       <div className="flex flex-col space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "ai")}</h1>
-        <p className="break-words text-muted-foreground">
+        <p className="wrap-break-word text-muted-foreground">
           {locale === "ar"
             ? "مساعدك الذكي للتداول مع رؤى السوق والتحكم في الرسوم البيانية والمشورة المخصصة"
             : "Your intelligent trading assistant powered by advanced AI. Get market insights, control charts, and receive personalized trading advice."}
@@ -70,27 +79,27 @@ export default function AIPage() {
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="break-words">{locale === "ar" ? "تحليل السوق في الوقت الفعلي" : "Real-time market analysis"}</span>
+                <span className="wrap-break-word">{locale === "ar" ? "تحليل السوق في الوقت الفعلي" : "Real-time market analysis"}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="break-words">
+                <span className="wrap-break-word">
                   {locale === "ar" ? "التحكم في الرسوم البيانية وتعيين المستويات" : "Chart control and level setting"}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="break-words">
+                <span className="wrap-break-word">
                   {locale === "ar" ? "توصيات استراتيجية التداول" : "Trading strategy recommendations"}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="break-words">{locale === "ar" ? "نصائح إدارة المخاطر" : "Risk management advice"}</span>
+                <span className="wrap-break-word">{locale === "ar" ? "نصائح إدارة المخاطر" : "Risk management advice"}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="break-words">
+                <span className="wrap-break-word">
                   {locale === "ar" ? "تحليل الأحداث الاقتصادية" : "Economic event analysis"}
                 </span>
               </div>
@@ -100,17 +109,17 @@ export default function AIPage() {
           <div className="rounded-lg border bg-muted/50 p-4 backdrop-blur supports-backdrop-filter:bg-muted/40">
             <h3 className="mb-3 truncate font-semibold">{locale === "ar" ? "نصائح الاستخدام" : "Usage Tips"}</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="break-words">
+              <p className="wrap-break-word">
                 • {locale === "ar" ? "اسأل أسئلة محددة حول اتجاهات السوق" : "Ask specific questions about market trends"}
               </p>
-              <p className="break-words">
+              <p className="wrap-break-word">
                 • {locale === "ar" ? "اطلب تعديلات الرسم البياني مثل إضافة دعم" : "Request chart modifications like add support"}
               </p>
-              <p className="break-words">
+              <p className="wrap-break-word">
                 •{" "}
                 {locale === "ar" ? "احصل على مشورة الاستراتيجية لظروف السوق المختلفة" : "Get strategy advice for different market conditions"}
               </p>
-              <p className="break-words">
+              <p className="wrap-break-word">
                 • {locale === "ar" ? "حلل الأحداث الاقتصادية وتأثيرها" : "Analyze economic events and their impact"}
               </p>
             </div>
