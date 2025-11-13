@@ -2,10 +2,10 @@ import { NextResponse } from "next/server"
 import OpenAI from "openai"
 
 export async function POST() {
-  try {
-    const apiKey = process.env.OPENAI_API_KEY
-    const workflowId = process.env.CHATKIT_WORKFLOW_ID
+  const apiKey = process.env.OPENAI_API_KEY
+  const workflowId = process.env.CHATKIT_WORKFLOW_ID
 
+  try {
     if (!apiKey) {
       console.error("[ChatKit] OPENAI_API_KEY is missing")
       return NextResponse.json(
@@ -42,8 +42,21 @@ export async function POST() {
     return NextResponse.json({ client_secret: session.client_secret })
   } catch (error) {
     console.error("ChatKit session failed", error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails = error instanceof Error ? error.stack : undefined
+    
+    console.error("[ChatKit] Error details:", {
+      message: errorMessage,
+      stack: errorDetails,
+      apiKey: apiKey ? "***" : "missing",
+      workflowId: workflowId || "missing",
+    })
+    
     return NextResponse.json(
-      { error: "Failed to create ChatKit session" },
+      { 
+        error: "Failed to create ChatKit session",
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
