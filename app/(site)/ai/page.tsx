@@ -1,8 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import dynamic from "next/dynamic"
-import { ChatInterface } from "@/components/ai/chat-interface"
 import { QuickActions } from "@/components/ai/quick-actions"
 import { AiChartPlaceholder } from "@/components/ai/chart-placeholder"
 import { useLocale } from "@/hooks/use-locale"
@@ -30,7 +29,6 @@ type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]
 
 export default function AIPage() {
   const { locale } = useLocale()
-  const chatRef = useRef<any>(null)
   const [symbol, setSymbol] = useState("AAPL")
   const [timeframe, setTimeframe] = useState<ChartTimeframe>("1h")
 
@@ -57,9 +55,8 @@ export default function AIPage() {
   }, [timeframe])
 
   const handleQuickAction = (message: string) => {
-    if (chatRef.current?.sendMessage) {
-      chatRef.current.sendMessage(message)
-    }
+    // Quick actions can be handled by ChatKit when it's ready
+    console.log("Quick action:", message)
   }
 
   return (
@@ -75,7 +72,6 @@ export default function AIPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <ChatInterface ref={chatRef} />
           <AiChartPlaceholder />
         </div>
 
@@ -135,15 +131,15 @@ export default function AIPage() {
         </div>
       </div>
 
-      {/* Desktop: Full ChatKit panel */}
-      <section className="mt-6 space-y-4">
+      {/* Desktop: Full ChatKit panel (only on large screens) */}
+      <div className="hidden lg:block mt-6">
         <LiiratChatDesktop />
+      </div>
 
-        {/* Mobile: Floating bubble (only visible on small screens) */}
-        <div className="lg:hidden">
-          <LiiratChatBubble />
-        </div>
-      </section>
+      {/* Mobile: Floating bubble (only visible on small screens) */}
+      <div className="lg:hidden">
+        <LiiratChatBubble />
+      </div>
     </div>
   )
 }

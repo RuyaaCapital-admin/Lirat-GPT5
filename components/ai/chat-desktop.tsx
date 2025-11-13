@@ -8,7 +8,7 @@ const LiiratChatPanel = dynamic(() => import("./chat-panel").then((m) => ({ defa
 
 export function LiiratChatDesktop() {
   return (
-    <div className="hidden lg:block w-full h-[650px] rounded-3xl bg-zinc-900/80 border border-zinc-800 overflow-hidden">
+    <div className="w-full h-[650px] rounded-3xl bg-zinc-900/80 border border-zinc-800 overflow-hidden">
       <LiiratChatPanel />
     </div>
   )

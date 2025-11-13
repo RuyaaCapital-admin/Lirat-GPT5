@@ -2,7 +2,10 @@ import { NextResponse } from "next/server"
 
 export async function POST() {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    const apiKey = process.env.OPENAI_API_KEY?.trim()
+    const workflowId = process.env.CHATKIT_WORKFLOW_ID?.trim()
+
+    if (!apiKey) {
       console.error("Missing OPENAI_API_KEY")
       return NextResponse.json(
         { error: "Missing OPENAI_API_KEY" },
@@ -10,7 +13,7 @@ export async function POST() {
       )
     }
 
-    if (!process.env.CHATKIT_WORKFLOW_ID) {
+    if (!workflowId) {
       console.error("Missing CHATKIT_WORKFLOW_ID")
       return NextResponse.json(
         { error: "Missing CHATKIT_WORKFLOW_ID" },
@@ -18,33 +21,63 @@ export async function POST() {
       )
     }
 
-    // Use OpenAI REST API directly since chatkit is not in the SDK
+    // Log API key prefix for debugging (first 15 chars only)
+    console.log("[ChatKit] Using API key prefix:", apiKey.substring(0, 15) + "...")
+    console.log("[ChatKit] Workflow ID:", workflowId)
+
+    // Use OpenAI REST API directly for ChatKit sessions
     const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         workflow: {
-          id: process.env.CHATKIT_WORKFLOW_ID,
+          id: workflowId,
         },
       }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error("OpenAI API error:", response.status, errorText)
-      throw new Error(`OpenAI API returned ${response.status}: ${errorText}`)
+      console.error("[ChatKit] OpenAI API error:", response.status, errorText)
+      
+      // Try to parse error JSON for better error messages
+      let errorDetails = errorText
+      try {
+        const errorJson = JSON.parse(errorText)
+        errorDetails = JSON.stringify(errorJson, null, 2)
+        console.error("[ChatKit] Parsed error:", errorJson)
+      } catch {
+        // Not JSON, use as-is
+      }
+      
+      return NextResponse.json(
+        { 
+          error: "Failed to create ChatKit session",
+          details: process.env.NODE_ENV === "development" ? errorDetails : undefined,
+          status: response.status
+        },
+        { status: response.status }
+      )
     }
 
     const session = await response.json()
+    console.log("[ChatKit] Session response keys:", Object.keys(session))
 
     if (!session?.client_secret) {
-      console.error("No client_secret in response:", session)
-      throw new Error("Invalid session response: missing client_secret")
+      console.error("[ChatKit] No client_secret in response:", session)
+      return NextResponse.json(
+        { 
+          error: "Invalid session response: missing client_secret",
+          details: process.env.NODE_ENV === "development" ? JSON.stringify(session, null, 2) : undefined
+        },
+        { status: 500 }
+      )
     }
 
+    console.log("[ChatKit] Session created successfully")
     return NextResponse.json(
       { client_secret: session.client_secret },
       {
@@ -53,11 +86,11 @@ export async function POST() {
       }
     )
   } catch (err) {
-    console.error("ChatKit session error", err)
+    console.error("[ChatKit] Unexpected error:", err)
     const errorMessage = err instanceof Error ? err.message : String(err)
     const errorStack = err instanceof Error ? err.stack : undefined
     
-    console.error("Full error details:", {
+    console.error("[ChatKit] Full error details:", {
       message: errorMessage,
       stack: errorStack,
       type: err?.constructor?.name,
