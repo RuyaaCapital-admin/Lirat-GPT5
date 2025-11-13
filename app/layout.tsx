@@ -4,6 +4,7 @@ import { Inter, Noto_Sans_Arabic } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LocaleProvider } from "@/hooks/use-locale"
+import { AuthProvider } from "@/contexts/auth-context"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -51,7 +52,9 @@ export default function RootLayout({
         </head>
         <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
-            <LocaleProvider>{children}</LocaleProvider>
+            <AuthProvider>
+              <LocaleProvider>{children}</LocaleProvider>
+            </AuthProvider>
           </ThemeProvider>
         </body>
       </html>

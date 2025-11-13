@@ -8,7 +8,17 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { LiiratLogo } from "@/components/liirat-logo"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation, isRTL } from "@/lib/i18n"
-import { Newspaper, TrendingUp, Bot, Bell, LayoutDashboard } from "lucide-react"
+import { Newspaper, TrendingUp, Bot, Bell, LayoutDashboard, LogIn, LogOut, User } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 const navigationItems = [
   {
@@ -42,6 +52,7 @@ export function Navigation() {
   const pathname = usePathname()
   const { locale } = useLocale()
   const rtl = isRTL(locale)
+  const { user, loading, signOut } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-transparent bg-white/70 backdrop-blur-xl shadow-[0_8px_32px_rgba(15,23,42,0.08)] dark:bg-background/70 dark:shadow-[0_8px_32px_rgba(2,6,23,0.6)]">
@@ -111,8 +122,41 @@ export function Navigation() {
           })}
         </nav>
 
-        {/* Language Switcher and Theme Toggle */}
+        {/* Auth & Settings */}
         <div className="flex items-center gap-2">
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-9 w-9">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium">{user.email}</p>
+                        <p className="text-xs text-muted-foreground">Signed in</p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link href="/auth/login">
+                  <Button variant="outline" size="sm">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+              )}
+            </>
+          )}
           <LanguageSwitcher />
           <ThemeToggle />
         </div>

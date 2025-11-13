@@ -2,7 +2,11 @@
 
 import { useState } from "react"
 import { MessageCircle, X } from "lucide-react"
-import { LiiratChatPanel } from "./chat-panel"
+import dynamic from "next/dynamic"
+
+const ProtectedChatPanel = dynamic(() => import("./protected-chat-panel").then((m) => ({ default: m.ProtectedChatPanel })), {
+  ssr: false,
+})
 
 export function LiiratChatBubble() {
   const [isOpen, setIsOpen] = useState(false)
@@ -22,7 +26,7 @@ export function LiiratChatBubble() {
       {isOpen && (
         <div className="fixed bottom-24 right-6 z-50 w-[90vw] max-w-[400px] rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl md:h-[600px] h-[520px] max-h-[calc(100vh-7rem)] flex flex-col overflow-hidden">
           <div className="flex-1 overflow-hidden min-h-0">
-            <LiiratChatPanel />
+            <ProtectedChatPanel />
           </div>
         </div>
       )}

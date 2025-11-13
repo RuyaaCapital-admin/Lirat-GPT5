@@ -1,7 +1,28 @@
 import { NextResponse } from "next/server"
+import { createServerClient } from '@/lib/supabase'
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    // Verify authentication from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '')
+      const supabase = createServerClient()
+      const { data: { user }, error } = await supabase.auth.getUser(token)
+      
+      if (error || !user) {
+        return NextResponse.json(
+          { error: "Unauthorized. Please sign in to use ChatKit." },
+          { status: 401 }
+        )
+      }
+    } else {
+      return NextResponse.json(
+        { error: "Unauthorized. Please sign in to use ChatKit." },
+        { status: 401 }
+      )
+    }
+
     const apiKey = process.env.OPENAI_API_KEY?.trim()
     const workflowId = process.env.CHATKIT_WORKFLOW_ID?.trim()
 

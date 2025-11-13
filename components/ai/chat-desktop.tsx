@@ -2,14 +2,14 @@
 
 import dynamic from "next/dynamic"
 
-const LiiratChatPanel = dynamic(() => import("./chat-panel").then((m) => ({ default: m.LiiratChatPanel })), {
+const ProtectedChatPanel = dynamic(() => import("./protected-chat-panel").then((m) => ({ default: m.ProtectedChatPanel })), {
   ssr: false,
 })
 
 export function LiiratChatDesktop() {
   return (
     <div className="w-full h-[650px] rounded-3xl bg-zinc-900/80 border border-zinc-800 overflow-hidden">
-      <LiiratChatPanel />
+      <ProtectedChatPanel />
     </div>
   )
 }
