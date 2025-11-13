@@ -5,23 +5,26 @@ export async function POST(request: Request) {
   try {
     // Verify authentication from Authorization header
     const authHeader = request.headers.get('authorization')
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
-      const supabase = createServerClient()
-      const { data: { user }, error } = await supabase.auth.getUser(token)
-      
-      if (error || !user) {
-        return NextResponse.json(
-          { error: "Unauthorized. Please sign in to use ChatKit." },
-          { status: 401 }
-        )
-      }
-    } else {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized. Please sign in to use ChatKit." },
         { status: 401 }
       )
     }
+
+    const token = authHeader.replace('Bearer ', '')
+    const supabase = createServerClient()
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+    
+    if (error || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please sign in to use ChatKit." },
+        { status: 401 }
+      )
+    }
+
+    // Get user ID from authenticated session
+    const userId = user.id
 
     const apiKey = process.env.OPENAI_API_KEY?.trim()
     const workflowId = process.env.CHATKIT_WORKFLOW_ID?.trim()
@@ -45,20 +48,7 @@ export async function POST(request: Request) {
     // Log API key prefix for debugging (first 15 chars only)
     console.log("[ChatKit] Using API key prefix:", apiKey.substring(0, 15) + "...")
     console.log("[ChatKit] Workflow ID:", workflowId)
-
-            // Get user ID from authenticated session
-            const authHeader = request.headers.get('authorization')
-            let userId: string
-            if (authHeader) {
-              const token = authHeader.replace('Bearer ', '')
-              const supabase = createServerClient()
-              const { data: { user } } = await supabase.auth.getUser(token)
-              // Use authenticated user ID, or generate a unique ID
-              userId = user?.id || `user-${crypto.randomUUID()}`
-            } else {
-              // Fallback: generate a unique user ID for unauthenticated requests
-              userId = `user-${crypto.randomUUID()}`
-            }
+    console.log("[ChatKit] User ID:", userId)
 
             // Use OpenAI REST API directly for ChatKit sessions
             const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
