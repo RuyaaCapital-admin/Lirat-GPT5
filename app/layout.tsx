@@ -1,7 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Noto_Sans_Arabic } from "next/font/google"
-import Script from "next/script"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { LocaleProvider } from "@/hooks/use-locale"
@@ -45,15 +44,15 @@ export default function RootLayout({
               font-family: ${notoSansArabic.style.fontFamily};
             }
           `}</style>
+          <script
+            src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
+            async
+          />
         </head>
         <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
             <LocaleProvider>{children}</LocaleProvider>
           </ThemeProvider>
-          <Script
-            src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js"
-            strategy="afterInteractive"
-          />
         </body>
       </html>
   )

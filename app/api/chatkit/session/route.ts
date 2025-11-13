@@ -41,10 +41,9 @@ export async function POST() {
 
     return NextResponse.json({ client_secret: session.client_secret })
   } catch (error) {
-    console.error("[ChatKit] Failed to create session:", error)
-    const errorMessage = error instanceof Error ? error.message : "Failed to create ChatKit session"
+    console.error("ChatKit session failed", error)
     return NextResponse.json(
-      { error: errorMessage },
+      { error: "Failed to create ChatKit session" },
       { status: 500 }
     )
   }
