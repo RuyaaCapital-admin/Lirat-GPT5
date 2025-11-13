@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { RefreshCw, Wifi, Activity, AlertTriangle } from "lucide-react"
-import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 type Timeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d"
@@ -86,7 +85,6 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
     const priceLinesRef = useRef<PriceLineCollections>({ support: [], resistance: [], custom: [] })
     const pendingSymbolTimerRef = useRef<number | null>(null)
     const pendingTimeframeTimerRef = useRef<number | null>(null)
-    const lastErrorToastRef = useRef<number>(0)
     const durationRef = useRef<number>(TIMEFRAMES[0].durationMs)
 
     const { resolvedTheme } = useTheme()
@@ -378,11 +376,6 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
           if (!active) return
           setStreamStatus("error")
           eventSource?.close()
-          const now = Date.now()
-          if (now - lastErrorToastRef.current > 15_000) {
-            toast.error(`Realtime feed lost for ${symbol}. Retrying...`)
-            lastErrorToastRef.current = now
-          }
           retryTimer = window.setTimeout(connect, 5_000)
         }
       }
