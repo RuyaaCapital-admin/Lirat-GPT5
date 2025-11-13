@@ -12,7 +12,6 @@ This guide explains how to connect your FMP Premium API endpoints to **OpenAI's 
 
 ## Overview
 
-
 Your ChatKit agent will have access to three main function tools:
 
 1. **get_price** - Real-time price data
@@ -26,7 +25,6 @@ The agent will **only** call these functions when the user asks for specific dat
 All endpoints are ready and deployed:
 
 ### 1. Price Endpoint
-
 
 - **URL:** `https://your-domain.vercel.app/api/fmp/price?symbol=AAPL`
 - **Method:** GET
@@ -135,7 +133,7 @@ In your ChatKit Agent Builder workflow (inside OpenAI Platform), add three Funct
 
 1. **Function Name:** `get_price`
 
-2. **Description:**
+1. **Description:**
 
 ```text
 Get the current price, change, volume, and market data for any stock, crypto, or forex symbol. 
@@ -143,7 +141,7 @@ Use this when the user asks about price, current value, or market data for a sym
 Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doing?"
 ```
 
-3. **Input Schema:**
+1. **Input Schema:**
 
 ```json
 {
@@ -158,7 +156,7 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
 }
 ```
 
-4. **API Configuration (in OpenAI Agent Builder):**
+1. **API Configuration (in OpenAI Agent Builder):**
 
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price`
@@ -170,7 +168,7 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
 
 1. **Function Name:** `get_signal`
 
-2. **Description:**
+1. **Description:**
 
 ```text
 Get trading signals and technical analysis for any symbol. Provides RSI, MACD indicators, 
@@ -179,7 +177,7 @@ Use this when the user asks about trading signals, technical analysis, or whethe
 Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 ```
 
-3. **Input Schema:**
+1. **Input Schema:**
 
 ```json
 {
@@ -200,7 +198,7 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 }
 ```
 
-4. **API Configuration (in OpenAI Agent Builder):**
+1. **API Configuration (in OpenAI Agent Builder):**
 
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/signal`
@@ -212,7 +210,7 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 
 1. **Function Name:** `get_news`
 
-2. **Description:**
+1. **Description:**
 
 ```text
 Get the latest financial news. Can filter by symbol or get general market news.
@@ -220,7 +218,7 @@ Use this when the user asks about news, recent events, or market updates.
 Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto news"
 ```
 
-3. **Input Schema:**
+1. **Input Schema:**
 
 ```json
 {
@@ -241,7 +239,7 @@ Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto new
 }
 ```
 
-4. **API Configuration (in OpenAI Agent Builder):**
+1. **API Configuration (in OpenAI Agent Builder):**
 
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/news`
@@ -282,7 +280,6 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
 ```
 
 ### Step 4: Test Your Functions
-
 
 1. **Test in OpenAI Agent Builder:**
    - Use the "Test" or "Preview" feature in OpenAI's Agent Builder interface
