@@ -1,11 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useChatKit, ChatKit } from "@openai/chatkit-react"
 import { chatkitOptions } from "@/lib/chatkitOptions"
 import { useAuth } from "@/contexts/auth-context"
 import { createClientSupabase } from "@/lib/supabase-client"
 
-export function LiiratChatPanel() {
+function ChatKitRenderer() {
   const { user } = useAuth()
   const supabase = createClientSupabase()
 
@@ -47,4 +48,23 @@ export function LiiratChatPanel() {
       <ChatKit control={control} />
     </div>
   )
+}
+
+export function LiiratChatPanel() {
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // Prevent hydration errors by only rendering ChatKit after client mount
+  if (!isMounted) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-sm text-muted-foreground">Loading chat...</div>
+      </div>
+    )
+  }
+
+  return <ChatKitRenderer />
 }
