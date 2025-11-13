@@ -65,31 +65,31 @@ export default function AIPage() {
         <div className="space-y-6">
           <QuickActions onActionClick={handleQuickAction} />
 
-          <div className="rounded-lg border bg-card p-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+          <div className="rounded-lg border bg-card p-4 backdrop-blur supports-backdrop-filter:bg-card/80">
             <h3 className="mb-3 truncate font-semibold">{locale === "ar" ? "إمكانيات الذكاء الاصطناعي" : "AI Capabilities"}</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                 <span className="break-words">{locale === "ar" ? "تحليل السوق في الوقت الفعلي" : "Real-time market analysis"}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                 <span className="break-words">
                   {locale === "ar" ? "التحكم في الرسوم البيانية وتعيين المستويات" : "Chart control and level setting"}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                 <span className="break-words">
                   {locale === "ar" ? "توصيات استراتيجية التداول" : "Trading strategy recommendations"}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                 <span className="break-words">{locale === "ar" ? "نصائح إدارة المخاطر" : "Risk management advice"}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
                 <span className="break-words">
                   {locale === "ar" ? "تحليل الأحداث الاقتصادية" : "Economic event analysis"}
                 </span>
@@ -97,7 +97,7 @@ export default function AIPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border bg-muted/50 p-4 backdrop-blur supports-[backdrop-filter]:bg-muted/40">
+          <div className="rounded-lg border bg-muted/50 p-4 backdrop-blur supports-backdrop-filter:bg-muted/40">
             <h3 className="mb-3 truncate font-semibold">{locale === "ar" ? "نصائح الاستخدام" : "Usage Tips"}</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
               <p className="break-words">
