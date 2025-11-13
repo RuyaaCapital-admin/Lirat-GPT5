@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { fmpStreamHub, type StreamPayload } from "@/lib/fmpStreamHub"
 
 export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
 const encoder = new TextEncoder()
 
@@ -43,7 +44,8 @@ export async function GET(request: Request) {
       try {
         unsubscribe = fmpStreamHub.subscribe(symbol, push)
       } catch (error) {
-        controller.error(error)
+        console.error('[FMP Stream] Subscription error:', error)
+        controller.error(error instanceof Error ? error : new Error(String(error)))
         return
       }
 
