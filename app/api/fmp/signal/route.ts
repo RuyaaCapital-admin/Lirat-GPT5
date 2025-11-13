@@ -112,36 +112,54 @@ export async function GET(req: Request) {
       }
     }
 
-    const result = {
-      symbol,
-      signal, // "BULLISH", "BEARISH", or "NEUTRAL"
-      signalStrength: Math.min(signalStrength, 3), // 0-3 scale
-      reasons,
+    // Build result with proper types (no null values that could break React)
+    const result: {
+      symbol: string
+      signal: string
+      signalStrength: number
+      reasons: string[]
       indicators: {
-        rsi: latestRsi
-          ? {
-              value: Number(latestRsi.rsi) || null,
-              date: latestRsi.date || null,
-            }
-          : null,
-        macd: latestMacd
-          ? {
-              macd: Number(latestMacd.macd) || null,
-              signal: Number(latestMacd.signal) || null,
-              histogram: Number(latestMacd.histogram) || null,
-              date: latestMacd.date || null,
-            }
-          : null,
-      },
-      price: quote
-        ? {
-            current: quote.price || null,
-            change: quote.change || null,
-            changePercent: quote.changesPercentage || null,
-          }
-        : null,
-      timeframe,
+        rsi?: { value: number; date: string }
+        macd?: { macd: number; signal: number; histogram: number; date: string }
+      }
+      price?: { current: number; change: number; changePercent: number }
+      timeframe: string
+      timestamp: number
+    } = {
+      symbol: String(symbol),
+      signal: String(signal), // "BULLISH", "BEARISH", or "NEUTRAL"
+      signalStrength: Math.min(signalStrength, 3), // 0-3 scale
+      reasons: Array.isArray(reasons) ? reasons.map(String) : [],
+      indicators: {},
+      timeframe: String(timeframe),
       timestamp: Date.now(),
+    }
+
+    // Add RSI if available
+    if (latestRsi && latestRsi.rsi) {
+      result.indicators.rsi = {
+        value: Number(latestRsi.rsi) || 0,
+        date: String(latestRsi.date || ""),
+      }
+    }
+
+    // Add MACD if available
+    if (latestMacd && latestMacd.macd !== undefined) {
+      result.indicators.macd = {
+        macd: Number(latestMacd.macd) || 0,
+        signal: Number(latestMacd.signal) || 0,
+        histogram: Number(latestMacd.histogram) || 0,
+        date: String(latestMacd.date || ""),
+      }
+    }
+
+    // Add price if available
+    if (quote && quote.price !== undefined) {
+      result.price = {
+        current: Number(quote.price) || 0,
+        change: Number(quote.change) || 0,
+        changePercent: Number(quote.changesPercentage) || 0,
+      }
     }
 
     return NextResponse.json(result, {

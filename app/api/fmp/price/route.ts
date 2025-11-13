@@ -62,21 +62,29 @@ export async function GET(req: Request) {
     }
 
     // Return normalized, agent-friendly format
+    // Ensure all values are proper types (no null, all numbers are numbers)
     const result = {
-      symbol: quote.symbol,
-      name: quote.name || symbol,
-      price: quote.price || 0,
-      change: quote.change || 0,
-      changePercent: quote.changesPercentage || 0,
-      volume: quote.volume || 0,
-      marketCap: quote.marketCap || null,
-      high: quote.dayHigh || null,
-      low: quote.dayLow || null,
-      open: quote.open || null,
-      previousClose: quote.previousClose || null,
-      timestamp: quote.timestamp || Date.now(),
-      exchange: quote.exchange || null,
+      symbol: String(quote.symbol || symbol),
+      name: String(quote.name || symbol || ""),
+      price: Number(quote.price) || 0,
+      change: Number(quote.change) || 0,
+      changePercent: Number(quote.changesPercentage) || 0,
+      volume: Number(quote.volume) || 0,
+      marketCap: quote.marketCap ? Number(quote.marketCap) : undefined,
+      high: quote.dayHigh ? Number(quote.dayHigh) : undefined,
+      low: quote.dayLow ? Number(quote.dayLow) : undefined,
+      open: quote.open ? Number(quote.open) : undefined,
+      previousClose: quote.previousClose ? Number(quote.previousClose) : undefined,
+      timestamp: quote.timestamp ? Number(quote.timestamp) : Date.now(),
+      exchange: quote.exchange ? String(quote.exchange) : undefined,
     }
+    
+    // Remove undefined fields to keep response clean
+    Object.keys(result).forEach(key => {
+      if (result[key as keyof typeof result] === undefined) {
+        delete result[key as keyof typeof result]
+      }
+    })
 
     return NextResponse.json(result, {
       headers: {

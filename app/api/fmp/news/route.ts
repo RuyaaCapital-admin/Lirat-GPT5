@@ -73,17 +73,28 @@ export async function GET(request: Request) {
 
     const items = await response.json()
 
-    // Normalize FMP news response
+    // Normalize FMP news response - ensure all fields are strings/valid types
     let normalizedItems = (Array.isArray(items) ? items : []).map((item: any) => ({
-      title: item.title,
-      text: item.text,
-      link: item.link,
-      source: item.site,
-      publishedDate: item.publishedDate,
-      image: item.image,
-      symbol: item.symbol,
-      sentiment: item.sentiment || "neutral",
+      title: String(item.title || ""),
+      text: String(item.text || ""),
+      link: String(item.link || ""),
+      source: String(item.site || ""),
+      publishedDate: String(item.publishedDate || ""),
+      image: item.image ? String(item.image) : undefined,
+      symbol: item.symbol ? String(item.symbol) : undefined,
+      sentiment: String(item.sentiment || "neutral"),
     }))
+    
+    // Remove undefined fields
+    normalizedItems = normalizedItems.map(item => {
+      const cleaned: any = {}
+      Object.keys(item).forEach(key => {
+        if (item[key as keyof typeof item] !== undefined) {
+          cleaned[key] = item[key as keyof typeof item]
+        }
+      })
+      return cleaned
+    })
 
     if (locale === "ar") {
       const translated = await Promise.all(
@@ -105,7 +116,11 @@ export async function GET(request: Request) {
       normalizedItems = translated
     }
 
-    return Response.json({ items: normalizedItems })
+    // Return consistent format with count
+    return Response.json({
+      items: normalizedItems,
+      count: normalizedItems.length,
+    })
   } catch (error) {
     console.error("[v0] FMP news fetch error:", error)
     return Response.json({ error: "Failed to fetch news" }, { status: 500 })
