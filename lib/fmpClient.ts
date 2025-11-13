@@ -329,13 +329,14 @@ class FmpRatesManager extends EventEmitter {
             const json = await response.json()
             const price =
               toNumber(json?.price) ?? toNumber(json?.rate) ?? toNumber(json?.bid) ?? toNumber(json?.ask) ?? null
-            if (price === null) {
-              console.warn(`[fmpClient] Price unavailable for ${pair.base}-${pair.quote}, defaulting to null`)
-              return { pair, value: null }
+            if (price === null && process.env.NODE_ENV === "development") {
+              log(`Price unavailable for ${pair.base}-${pair.quote}, defaulting to null`)
             }
             return { pair, value: price }
           } catch (error) {
-            console.error(`[fmpClient] Failed to fetch ${pair.base}-${pair.quote}:`, error)
+            if (process.env.NODE_ENV === "development") {
+              console.error(`[fmpClient] Failed to fetch ${pair.base}-${pair.quote}:`, error)
+            }
             return { pair, value: null }
           }
       }),
@@ -352,8 +353,9 @@ class FmpRatesManager extends EventEmitter {
 
         if (rawKey !== "SYP" && rawKey in fx) {
         const numericKey = rawKey as FxNumericKey
-          if (value === null) {
-            console.warn(`[fmpClient] Using null snapshot value for ${pair.base}-${pair.quote}`)
+          // Only log in development to reduce console noise
+          if (value === null && process.env.NODE_ENV === "development") {
+            log(`Using null snapshot value for ${pair.base}-${pair.quote}`)
           }
         fx[numericKey] = value !== null ? Number(value.toFixed(pair.decimals)) : null
         continue
@@ -386,7 +388,9 @@ class FmpRatesManager extends EventEmitter {
         gram24 = Number(((ounceUSD * usdtry) / 31.1035).toFixed(0))
       }
     } catch (error) {
-      console.error("[fmpClient] Failed to fetch gold reference (XAUUSD):", error)
+      if (process.env.NODE_ENV === "development") {
+        console.error("[fmpClient] Failed to fetch gold reference (XAUUSD):", error)
+      }
     }
 
     const goldDerived = deriveGoldFromGram(gram24)
