@@ -3,7 +3,8 @@
 ## Error: Domain verification failed
 
 If you see this error:
-```
+
+```text
 IntegrationError: Domain verification failed for https://your-domain.vercel.app. 
 Please register your domain at https://platform.openai.com/settings/organization/security/domain-allowlist.
 ```
@@ -13,7 +14,7 @@ Please register your domain at https://platform.openai.com/settings/organization
 You need to register your domain in OpenAI's domain allowlist:
 
 1. **Go to OpenAI Platform Settings:**
-   - Visit: https://platform.openai.com/settings/organization/security/domain-allowlist
+   - Visit: <https://platform.openai.com/settings/organization/security/domain-allowlist>
    - Or navigate: OpenAI Platform → Settings → Organization → Security → Domain Allowlist
 
 2. **Add Your Domain:**
@@ -45,6 +46,7 @@ You need to register your domain in OpenAI's domain allowlist:
 ## Verification
 
 After adding your domain:
+
 1. Wait 2-5 minutes for propagation
 2. Clear your browser cache
 3. Refresh the page
@@ -54,4 +56,3 @@ After adding your domain:
 
 - **Vercel Preview:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app`
 - **Future Production:** `https://liiratnews.com` (to be configured later)
-
