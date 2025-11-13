@@ -220,6 +220,8 @@ class FmpRatesManager extends EventEmitter {
 
   private lastWsAt = 0
 
+  private retryCount = 0
+
   constructor() {
     super()
     this.apiKey = process.env.FMP_API_KEY ?? process.env.FMP_KEY ?? process.env.FMP_SECRET
@@ -311,26 +313,21 @@ class FmpRatesManager extends EventEmitter {
 
     const results = await Promise.all(
       FX_PAIRS.map(async (pair) => {
-        try {
-          const endpoint = buildFxEndpoint(this.apiKey!, pair.base, pair.quote)
-          const response = await fetchWithRetry(endpoint)
-          const json = await response.json()
-          const price =
-            toNumber(json?.price) ?? toNumber(json?.rate) ?? toNumber(json?.bid) ?? toNumber(json?.ask) ?? null
-          if (price === null) {
-            if (!pair.optional) {
-              throw new Error(`Missing price for ${pair.base}-${pair.quote}`)
+          try {
+            const endpoint = buildFxEndpoint(this.apiKey!, pair.base, pair.quote)
+            const response = await fetchWithRetry(endpoint)
+            const json = await response.json()
+            const price =
+              toNumber(json?.price) ?? toNumber(json?.rate) ?? toNumber(json?.bid) ?? toNumber(json?.ask) ?? null
+            if (price === null) {
+              console.warn(`[fmpClient] Price unavailable for ${pair.base}-${pair.quote}, defaulting to null`)
+              return { pair, value: null }
             }
+            return { pair, value: price }
+          } catch (error) {
+            console.error(`[fmpClient] Failed to fetch ${pair.base}-${pair.quote}:`, error)
             return { pair, value: null }
           }
-          return { pair, value: price }
-        } catch (error) {
-          if (!pair.optional) {
-            throw error
-          }
-          console.warn(`[fmpClient] Optional pair ${pair.base}-${pair.quote} failed:`, error)
-          return { pair, value: null }
-        }
       }),
     )
 
@@ -343,8 +340,11 @@ class FmpRatesManager extends EventEmitter {
         continue
       }
 
-      if (rawKey !== "SYP" && rawKey in fx) {
+        if (rawKey !== "SYP" && rawKey in fx) {
         const numericKey = rawKey as FxNumericKey
+          if (value === null) {
+            console.warn(`[fmpClient] Using null snapshot value for ${pair.base}-${pair.quote}`)
+          }
         fx[numericKey] = value !== null ? Number(value.toFixed(pair.decimals)) : null
         continue
       }
@@ -398,6 +398,11 @@ class FmpRatesManager extends EventEmitter {
       return
     }
 
+    if (this.reconnectHandle) {
+      clearTimeout(this.reconnectHandle)
+      this.reconnectHandle = null
+    }
+
     if (this.ws) {
       try {
         this.ws.close()
@@ -411,9 +416,10 @@ class FmpRatesManager extends EventEmitter {
     const ws = new WebSocket(url)
     this.ws = ws
 
-    ws.addEventListener("open", () => {
-      this.wsConnected = true
-      this.reconnectDelay = BACKOFF_BASE_MS
+      ws.addEventListener("open", () => {
+        this.wsConnected = true
+        this.retryCount = 0
+        this.reconnectDelay = BACKOFF_BASE_MS
       const symbols = Object.keys(STREAM_SYMBOL_MAP)
       const payload = {
         event: "subscribe",
@@ -510,12 +516,14 @@ class FmpRatesManager extends EventEmitter {
 
   private scheduleReconnect() {
     if (this.reconnectHandle) {
-      clearTimeout(this.reconnectHandle)
+      return
     }
+    const delay = Math.min(BACKOFF_BASE_MS * Math.pow(1.5, this.retryCount), 25_000)
     this.reconnectHandle = setTimeout(() => {
-      this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 25_000)
+      this.reconnectHandle = null
+      this.retryCount = Math.min(this.retryCount + 1, 12)
       this.connectWebSocket()
-    }, this.reconnectDelay)
+    }, delay)
   }
 }
 

@@ -93,6 +93,7 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
     const [isLoading, setIsLoading] = useState(true)
     const [historicalError, setHistoricalError] = useState<string | null>(null)
     const [streamStatus, setStreamStatus] = useState<StreamStatus>("idle")
+    const [hasData, setHasData] = useState(false)
 
     const timeframeConfig = useMemo(() => {
       return TIMEFRAMES.find((item) => item.value === timeframe) ?? TIMEFRAMES[0]
@@ -289,11 +290,13 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
           chartRef.current?.timeScale().fitContent()
           clearLines()
           setIsLoading(false)
+          setHasData(candles.length > 0)
         } catch (error) {
           if (signal.aborted) return
           console.error("[LightChart] historical fetch error:", error)
           setHistoricalError("Failed to load historical data.")
           setIsLoading(false)
+          setHasData(false)
         }
       },
       [clearLines, timeframeConfig.period],
@@ -367,6 +370,7 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
               }
               seriesRef.current?.update(newCandle)
             }
+            setHasData(candles.length > 0)
           } catch (error) {
             console.error("[LightChart] stream payload error:", error)
           }
@@ -560,6 +564,11 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
                 <span className="text-sm font-medium text-muted-foreground">
                   {locale === "ar" ? "جاري تحميل البيانات التاريخية..." : "Loading historical data..."}
                 </span>
+              </div>
+            )}
+            {!isLoading && !hasData && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 text-sm font-medium text-muted-foreground backdrop-blur-sm dark:bg-slate-900/80">
+                {locale === "ar" ? "لا توجد بيانات متاحة بعد" : "No data yet"}
               </div>
             )}
           </div>
