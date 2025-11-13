@@ -32,11 +32,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 ### Option 2: Using API Endpoint
 
 After setting environment variables, you can call:
-```
+
+```http
 POST http://localhost:3000/api/supabase/init-tables
 ```
 
-**Note:** Replace `localhost:3000` with your production domain when deployed. The main domain is configured in your Supabase project settings and should be updated in the OAuth redirect URLs.
+**Note:** Replace `localhost:3000` with your production domain when deployed (currently `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/`, will be `https://liiratnews.com` later). The main domain is configured in your Supabase project settings and should be updated in the OAuth redirect URLs.
 
 Note: This requires the `exec_sql` RPC function to be set up in Supabase.
 
@@ -59,6 +60,7 @@ The schema creates the following tables:
 5. **user_preferences** - User settings and preferences
 
 All tables include:
+
 - Row Level Security (RLS) policies
 - Proper indexes for performance
 - Automatic `updated_at` timestamps
@@ -79,4 +81,3 @@ const { data, error } = await supabase
 import { createServerClient } from '@/lib/supabase'
 const supabase = createServerClient()
 ```
-
