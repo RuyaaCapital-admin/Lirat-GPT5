@@ -8,7 +8,7 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { LiiratLogo } from "@/components/liirat-logo"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation, isRTL } from "@/lib/i18n"
-import { BarChart3, Newspaper, TrendingUp, Bot, Bell, LayoutDashboard } from "lucide-react"
+import { Newspaper, TrendingUp, Bot, Bell, LayoutDashboard } from "lucide-react"
 
 const navigationItems = [
   {
@@ -25,11 +25,6 @@ const navigationItems = [
     key: "financial" as const,
     href: "/financial",
     icon: TrendingUp,
-  },
-  {
-    key: "markets" as const,
-    href: "/markets",
-    icon: BarChart3,
   },
   {
     key: "ai" as const,

@@ -12,11 +12,11 @@ import { useLocale } from "@/hooks/use-locale"
 
 const heroMetrics = [
   {
-    value: "64+",
-    labelEn: "Markets monitored",
-    labelAr: "أسواق تحت المراقبة",
+    value: "AI",
+    labelEn: "Agent workspace",
+    labelAr: "مساحة الوكيل الذكي",
     accent: "from-emerald-400/70 to-emerald-500/60",
-    href: "/markets",
+    href: "/ai",
   },
   {
     value: "45",
@@ -56,22 +56,22 @@ export default function Dashboard() {
                 ? "مؤشرات الاقتصاد، حركة الليرة، ورسوم الأسواق المتقدمة في تجربة واحدة سلسة."
                 : "Macro indicators, lira flows, and advanced market views in one refined experience."}
             </p>
-            <div className="hero-animate flex flex-wrap gap-3" style={{ "--hero-delay": "0.22s" } as CSSProperties}>
-              <Link
-                href="/economic"
-                className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_20px_40px_rgba(57,179,107,0.35)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(57,179,107,0.45)]"
-              >
-                {isArabic ? "استكشف التقويم الاقتصادي" : "Explore the economic calendar"}
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/markets"
-                className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-white/80 px-5 py-2.5 text-sm font-semibold text-primary transition-colors duration-200 hover:border-primary hover:text-primary dark:border-primary/40 dark:bg-background/70 dark:text-primary-foreground"
-              >
-                {isArabic ? "افتح لوحة الأسواق" : "Open market workspace"}
-                <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
+              <div className="hero-animate flex flex-wrap gap-3" style={{ "--hero-delay": "0.22s" } as CSSProperties}>
+                <Link
+                  href="/economic"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[0_20px_40px_rgba(57,179,107,0.35)] transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-[0_28px_60px_rgba(57,179,107,0.45)]"
+                >
+                  {isArabic ? "استكشف التقويم الاقتصادي" : "Explore the economic calendar"}
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/ai"
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-white/80 px-5 py-2.5 text-sm font-semibold text-primary transition-colors duration-200 hover:border-primary hover:text-primary dark:border-primary/40 dark:bg-background/70 dark:text-primary-foreground"
+                >
+                  {isArabic ? "شغّل وكيل التداول الذكي" : "Launch the AI trading agent"}
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </div>
             <div className="grid gap-3 sm:grid-cols-3">
               {heroMetrics.map((metric, index) => (
                 <Link

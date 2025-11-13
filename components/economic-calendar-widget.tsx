@@ -147,20 +147,29 @@ function EconomicCalendarWidgetComponent() {
       const markReady = () => {
         scriptLoadedRef.current = true
         const start = performance.now()
-        const tick = () => {
+        const waitForIframe = () => {
           if (cancelled) return
-          const iframe = target.querySelector("iframe")
-          if (iframe && iframe.contentWindow) {
+            const iframe = target.querySelector<HTMLIFrameElement>("iframe")
+          if (iframe) {
+            iframe.setAttribute("tabindex", "-1")
+            iframe.setAttribute(
+              "title",
+              language === "ar" ? "تقويم اقتصادي للعرض فقط" : "Economic calendar (read-only)",
+            )
             setIsReady(true)
-          } else if (performance.now() - start < 3000) {
-            requestAnimationFrame(tick)
+            return
+          }
+
+          if (performance.now() - start < 6500) {
+            requestAnimationFrame(waitForIframe)
           } else if (!retried) {
             retried = true
             root.innerHTML = ""
-            window.setTimeout(mount, 320)
+            window.setTimeout(mount, 480)
           }
         }
-        requestAnimationFrame(tick)
+
+        requestAnimationFrame(waitForIframe)
       }
 
       loader.addEventListener("load", markReady)
@@ -257,7 +266,15 @@ function EconomicCalendarWidgetComponent() {
         </div>
       )}
 
-      <div ref={containerRef} className="calendar-inner" style={{ opacity: isReady ? 1 : 0 }} />
+        <div className="calendar-inner" data-ready={isReady}>
+          <div ref={containerRef} className="calendar-inner__host" />
+          <div className="calendar-inner__mask" aria-hidden="true" />
+          <div className="calendar-inner__footer" aria-hidden="true">
+            <span className="calendar-inner__footer-label">
+              {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
+            </span>
+          </div>
+        </div>
 
       <div className="bottom-blocker" aria-hidden="true">
         <button
@@ -483,15 +500,19 @@ function EconomicCalendarWidgetComponent() {
           position: relative;
           width: 100%;
           max-width: 100%;
-          height: 100%;
           min-height: 760px;
           flex: 1 1 auto;
           box-sizing: border-box;
-          transition: opacity 0.3s ease;
           border-radius: 28px;
           background: rgba(255, 255, 255, 0.95);
           border: 1px solid rgba(209, 223, 216, 0.5);
           overflow: hidden;
+          opacity: 0;
+          transition: opacity 0.35s ease;
+        }
+
+        .calendar-inner[data-ready="true"] {
+          opacity: 1;
         }
 
         [data-theme="dark"] .calendar-inner,
@@ -506,26 +527,130 @@ function EconomicCalendarWidgetComponent() {
           inset: 0;
           pointer-events: none;
           background: linear-gradient(140deg, rgba(233, 245, 238, 0.18), rgba(255, 255, 255, 0.05));
+          mix-blend-mode: soft-light;
+          z-index: 2;
         }
 
-        #economicCalendarWidget {
+        [data-theme="dark"] .calendar-inner::before,
+        .dark .calendar-inner::before {
+          background: linear-gradient(140deg, rgba(14, 30, 24, 0.2), rgba(9, 18, 14, 0.35));
+          mix-blend-mode: normal;
+        }
+
+        .calendar-inner__host {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          min-height: inherit;
+          box-sizing: border-box;
+          pointer-events: auto;
+          isolation: isolate;
+          z-index: 1;
+        }
+
+        .calendar-inner__host #economicCalendarWidget {
           width: 100% !important;
           max-width: 100% !important;
           height: 100% !important;
-          min-height: 760px !important;
+          min-height: inherit !important;
           box-sizing: border-box !important;
           overflow: hidden !important;
         }
 
-        #economicCalendarWidget iframe {
+        .calendar-inner__host iframe {
           width: 100% !important;
           max-width: 100% !important;
-          height: 760px !important;
-          min-height: 760px !important;
+          height: 100% !important;
+          min-height: inherit !important;
           border: none !important;
           box-sizing: border-box !important;
           border-radius: 24px !important;
           overflow: hidden !important;
+          background: transparent !important;
+          transition: filter 0.35s ease;
+        }
+
+        [data-theme="dark"] .calendar-inner__host iframe,
+        .dark .calendar-inner__host iframe {
+          filter: invert(0.92) hue-rotate(180deg) saturate(0.9) contrast(0.95);
+        }
+
+        .calendar-inner__mask {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 3;
+          background:
+            linear-gradient(0deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0) 14%),
+            linear-gradient(180deg, rgba(255, 255, 255, 0) 60%, rgba(10, 21, 16, 0.85) 100%);
+          mix-blend-mode: multiply;
+        }
+
+        [data-theme="dark"] .calendar-inner__mask,
+        .dark .calendar-inner__mask {
+          background:
+            linear-gradient(0deg, rgba(11, 20, 16, 0.72) 0%, rgba(11, 20, 16, 0) 14%),
+            linear-gradient(180deg, rgba(11, 20, 16, 0) 58%, rgba(11, 20, 16, 0.9) 100%);
+          mix-blend-mode: normal;
+        }
+
+        .calendar-inner__footer {
+          position: absolute;
+          inset-inline: 0;
+          bottom: 0;
+          height: 90px;
+          z-index: 4;
+          pointer-events: auto;
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          cursor: not-allowed;
+          background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.88) 55%,
+            rgba(255, 255, 255, 0.48) 85%,
+            rgba(255, 255, 255, 0) 100%
+          );
+        }
+
+        [data-theme="dark"] .calendar-inner__footer,
+        .dark .calendar-inner__footer {
+          background: linear-gradient(
+            to top,
+            rgba(8, 15, 13, 0.95) 0%,
+            rgba(10, 18, 15, 0.85) 55%,
+            rgba(10, 18, 15, 0.45) 85%,
+            rgba(10, 18, 15, 0) 100%
+          );
+        }
+
+        .calendar-inner__footer-label {
+          margin-bottom: 14px;
+          border-radius: 999px;
+          padding: 6px 16px;
+          background: rgba(10, 22, 15, 0.72);
+          border: 1px solid rgba(117, 204, 158, 0.28);
+          color: rgba(214, 244, 226, 0.88);
+          font-size: 0.62rem;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          pointer-events: none;
+          backdrop-filter: blur(6px);
+          opacity: 0;
+          transform: translateY(8px);
+          transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        [data-theme="dark"] .calendar-inner__footer-label,
+        .dark .calendar-inner__footer-label {
+          background: rgba(4, 12, 9, 0.82);
+          border-color: rgba(117, 204, 158, 0.45);
+        }
+
+        .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
+          opacity: 1;
+          transform: translateY(0);
         }
 
         .calendar-wrapper [class*="copyright"],
@@ -549,6 +674,7 @@ function EconomicCalendarWidgetComponent() {
 
         .calendar-wrapper,
         .calendar-inner,
+        .calendar-inner__host,
         #economicCalendarWidget,
         #economicCalendarWidget * {
           overflow-x: hidden !important;
@@ -882,10 +1008,14 @@ function EconomicCalendarWidgetComponent() {
           }
 
           .calendar-inner,
-          #economicCalendarWidget,
-          #economicCalendarWidget iframe {
+          .calendar-inner__host,
+          .calendar-inner__host #economicCalendarWidget,
+          .calendar-inner__host iframe {
             min-height: 760px !important;
             height: 760px !important;
+          }
+          .calendar-inner__footer {
+            height: 88px;
           }
         }
 
@@ -906,8 +1036,9 @@ function EconomicCalendarWidgetComponent() {
           }
 
           .calendar-inner,
-          #economicCalendarWidget,
-          #economicCalendarWidget iframe {
+          .calendar-inner__host,
+          .calendar-inner__host #economicCalendarWidget,
+          .calendar-inner__host iframe {
             min-height: 680px !important;
             height: 680px !important;
           }
@@ -915,6 +1046,10 @@ function EconomicCalendarWidgetComponent() {
           .calendar-chat {
             width: calc(100% - 36px);
             inset-inline: 18px;
+          }
+
+          .calendar-inner__footer {
+            height: 82px;
           }
         }
 
@@ -933,22 +1068,27 @@ function EconomicCalendarWidgetComponent() {
             text-align: center;
           }
 
+          .calendar-inner,
+          .calendar-inner__host,
+          .calendar-inner__host #economicCalendarWidget,
+          .calendar-inner__host iframe {
+            min-height: 640px !important;
+            height: 640px !important;
+          }
+
           .calendar-chat {
             bottom: 110px;
             max-height: 400px;
+          }
+
+          .calendar-inner__footer {
+            height: 76px;
           }
         }
 
         @media (max-width: 430px) {
           .calendar-wrapper {
             min-height: 620px;
-          }
-
-          .calendar-inner,
-          #economicCalendarWidget,
-          #economicCalendarWidget iframe {
-            min-height: 620px !important;
-            height: 620px !important;
           }
 
           .brand-pill {
@@ -964,6 +1104,18 @@ function EconomicCalendarWidgetComponent() {
           .calendar-chat {
             width: calc(100% - 36px);
             inset-inline: 18px;
+          }
+
+          .calendar-inner,
+          .calendar-inner__host,
+          .calendar-inner__host #economicCalendarWidget,
+          .calendar-inner__host iframe {
+            min-height: 620px !important;
+            height: 620px !important;
+          }
+
+          .calendar-inner__footer {
+            height: 70px;
           }
         }
       `}</style>

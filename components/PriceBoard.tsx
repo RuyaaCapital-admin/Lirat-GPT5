@@ -1,46 +1,67 @@
 'use client'
 
-import type { ReactNode } from "react"
-import { useEffect, useMemo, useState } from "react"
+import type { ReactElement, ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
-import { isRTL, num, tsPretty } from "@/lib/format"
+import useSWR from "swr"
+import {
+  AlertCircle,
+  ArrowDownRight,
+  ArrowUpRight,
+  Clock3,
+  Minus,
+  RefreshCw,
+  Sparkles,
+  Wifi,
+} from "lucide-react"
+import { useLocale } from "@/hooks/use-locale"
+import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import type { RatesApiResponse } from "@/lib/fmpClient"
 
-type Data = {
-  ts: string
-  gold: {
-    k14: number
-    k18: number
-    k21: number
-    k22: number
-    k24: number
-    tamAltin: number
-    ounceUSD: number
-  }
-  fx: {
-    USD_TRY: number
-    EUR_TRY: number
-    GBP_TRY: number
-    LYD_TRY: number | null
-    EGP_TRY: number | null
-    IQD_TRY: number | null
-    SYP: {
-      USD_SYP: number | null
-    }
-  }
+type Trend = "up" | "down" | "flat"
+
+type RateRowDefinition = {
+  id: string
+  label: string
+  code?: string
+  unit: string
+  value: number | null
+  suffix: string
+  decimals: number
+  icon?: ReactNode
+  flagCode?: string
 }
 
-const LABELS = {
-  heading: isRTL ? "لوحة أسعار ليرات" : "Liirat Price Board",
-  subheading: isRTL ? "سعر الصرف والذهب محدث كل دقيقة" : "Exchange & bullion levels, refreshed every minute",
-  goldTitle: isRTL ? "الذهب بالليرة التركية" : "Gold in Turkish Lira",
-  fxTitle: isRTL ? "العملات مقابل الليرة التركية" : "Currencies vs Turkish Lira",
-  updated: isRTL ? "آخر تحديث" : "Last update",
-  retry: isRTL ? "إعادة المحاولة" : "Retry",
+type RateRow = RateRowDefinition & {
+  trend: Trend
 }
 
-const FLAG_SIZE = 20
+type LiveStatus = "idle" | "connecting" | "open" | "error"
 
-const FLAG_MAP: Record<string, JSX.Element> = {
+type Copy = {
+  heading: string
+  subheading: string
+  goldTitle: string
+  fxTitle: string
+  updated: string
+  waiting: string
+  live: string
+  connecting: string
+  reconnecting: string
+  retry: string
+  refresh: string
+  success: string
+  error: string
+  perGram: string
+  usdPerOunce: string
+  tryPer: (code: string) => string
+  sypPerUsd: string
+}
+
+const FLAG_SIZE = 18
+
+const FLAG_MAP: Record<string, ReactElement> = {
   USD: (
     <svg width={FLAG_SIZE} height={FLAG_SIZE * 0.7} viewBox="0 0 20 14" aria-hidden="true">
       <rect width="20" height="14" fill="#fff" />
@@ -114,219 +135,647 @@ const FLAG_MAP: Record<string, JSX.Element> = {
 }
 
 const DEFAULT_FLAG = (
-  <div className="h-5 w-5 rounded-full border border-emerald-200/40 bg-emerald-400/15 shadow-[0_0_12px_rgba(16,185,129,0.35)]" aria-hidden="true" />
+  <div
+    className="h-6 w-6 rounded-full border border-emerald-200/40 bg-emerald-400/15 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+    aria-hidden="true"
+  />
 )
 
 function getFlag(code?: string) {
   if (!code) return DEFAULT_FLAG
   return FLAG_MAP[code] ?? DEFAULT_FLAG
 }
-export default function PriceBoard() {
-  const [data, setData] = useState<Data | null>(null)
-  const [error, setError] = useState(false)
 
-  const load = async () => {
-    try {
-      const response = await fetch("/api/rates", { cache: "no-store" })
-      if (!response.ok) {
-        throw new Error("Failed to fetch rates")
-      }
-      const json = await response.json()
-      setData(json)
-      setError(false)
-    } catch (err) {
-      console.error("[PriceBoard] fetch error:", err)
-      setError(true)
-    }
+const GoldIcon = () => (
+  <svg viewBox="0 0 32 32" className="h-6 w-6 text-amber-300" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="goldGradient" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#FDE68A" />
+        <stop offset="0.5" stopColor="#FACC15" />
+        <stop offset="1" stopColor="#FBBF24" />
+      </linearGradient>
+    </defs>
+    <rect x="4" y="6" width="24" height="20" rx="6" fill="url(#goldGradient)" />
+    <rect x="6.5" y="8.5" width="19" height="15" rx="4" fill="rgba(255,255,255,0.08)" />
+    <path d="M10 16h12" stroke="rgba(16,24,16,0.35)" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M10 12h12M10 20h12" stroke="rgba(16,24,16,0.15)" strokeWidth="1" strokeLinecap="round" />
+  </svg>
+)
+
+const fetcher = async (url: string): Promise<RatesApiResponse> => {
+  const response = await fetch(url, { cache: "no-store" })
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`)
+  }
+  return response.json()
+}
+
+function formatNumber(value: number | null, locale: string, decimals: number) {
+  if (value === null || Number.isNaN(value)) return "—"
+  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+    useGrouping: true,
+  }).format(value)
+}
+
+function formatRelativeTime(iso: string | undefined, locale: string) {
+  if (!iso) return locale === "ar" ? "—" : "—"
+  const dt = new Date(iso)
+  if (Number.isNaN(dt.getTime())) return locale === "ar" ? "—" : "—"
+  const diff = dt.getTime() - Date.now()
+  const absSeconds = Math.round(Math.abs(diff) / 1000)
+  const formatter = new Intl.RelativeTimeFormat(locale === "ar" ? "ar-EG" : "en-US", { numeric: "auto" })
+
+  if (absSeconds < 60) {
+    return formatter.format(Math.round(diff / 1000), "second")
   }
 
-  useEffect(() => {
-    load()
-    const id = window.setInterval(load, 60_000)
-    return () => window.clearInterval(id)
-  }, [])
+  const minutes = Math.round(diff / (1000 * 60))
+  if (Math.abs(minutes) < 60) {
+    return formatter.format(minutes, "minute")
+  }
 
-  const goldRows = useMemo(
-    () => [
-        { label: isRTL ? "ذهب عيار 24" : "Gold 24K", value: num(data?.gold.k24, 0), suffix: "₺" },
-        { label: isRTL ? "ذهب عيار 22" : "Gold 22K", value: num(data?.gold.k22, 0), suffix: "₺" },
-        { label: isRTL ? "ذهب عيار 21" : "Gold 21K", value: num(data?.gold.k21, 0), suffix: "₺" },
-        { label: isRTL ? "ذهب عيار 18" : "Gold 18K", value: num(data?.gold.k18, 0), suffix: "₺" },
-        { label: isRTL ? "ذهب عيار 14" : "Gold 14K", value: num(data?.gold.k14, 0), suffix: "₺" },
-        { label: isRTL ? "الليرة الذهبية (تم)" : "Full Coin (Tam)", value: num(data?.gold.tamAltin, 0), suffix: "₺" },
-        { label: isRTL ? "أونصة الذهب بالدولار" : "Gold Ounce (XAUUSD)", value: num(data?.gold.ounceUSD, 2), suffix: "USD" },
-    ],
-    [data],
+  const hours = Math.round(diff / (1000 * 60 * 60))
+  return formatter.format(hours, "hour")
+}
+
+function formatStale(seconds: number, locale: string) {
+  if (Number.isNaN(seconds) || seconds < 0) return locale === "ar" ? "قديمة" : "stale"
+  return locale === "ar" ? `قديمة منذ ${seconds}ث` : `stale ${seconds}s`
+}
+
+export default function PriceBoard() {
+  const { locale } = useLocale()
+  const isRTL = locale === "ar"
+
+  const copy = useMemo<Copy>(
+    () => ({
+      heading: isRTL ? "لوحة أسعار ليرات" : "Liirat Price Board",
+      subheading: isRTL
+        ? "أسعار العملات والذهب مع تحديثات حية وتحديث آمن عند الانقطاع"
+        : "Currencies & bullion with real-time streaming updates and safe fallbacks",
+      goldTitle: isRTL ? "أسعار الذهب بالليرة التركية" : "Gold priced in Turkish Lira",
+      fxTitle: isRTL ? "أسعار الصرف مقابل الليرة" : "FX versus Turkish Lira",
+      updated: isRTL ? "آخر تحديث" : "Last updated",
+      waiting: isRTL ? "بانتظار أول تحديث..." : "Waiting for the first update…",
+      live: isRTL ? "متصل" : "Live",
+      connecting: isRTL ? "جاري الاتصال" : "Connecting",
+      reconnecting: isRTL ? "إعادة الاتصال..." : "Reconnecting…",
+      retry: isRTL ? "إعادة المحاولة" : "Retry",
+      refresh: isRTL ? "تحديث" : "Refresh",
+      success: isRTL ? "تم تحديث الأسعار الآن" : "Live prices updated",
+      error: isRTL
+        ? "تعذر تحديث الأسعار. نعرض آخر بيانات متوفرة."
+        : "We couldn’t refresh prices. Showing the last available snapshot.",
+      perGram: isRTL ? "₺ لكل غرام" : "TRY per gram",
+      usdPerOunce: isRTL ? "دولار لكل أونصة" : "USD per ounce",
+      tryPer: (code: string) => (isRTL ? `₺ لكل 1 ${code}` : `TRY per 1 ${code}`),
+      sypPerUsd: isRTL ? "ليرة سورية لكل 1 دولار" : "SYP per 1 USD",
+    }),
+    [isRTL],
   )
 
-  const fxRows = useMemo(
-    () => [
-      { code: "USD", label: "USD", value: num(data?.fx.USD_TRY), suffix: "₺", flagCode: "USD" },
-      { code: "EUR", label: "EUR", value: num(data?.fx.EUR_TRY), suffix: "₺", flagCode: "EUR" },
-      { code: "GBP", label: "GBP", value: num(data?.fx.GBP_TRY), suffix: "₺", flagCode: "GBP" },
-      { code: "LYD", label: "LYD", value: num(data?.fx.LYD_TRY), suffix: "₺", flagCode: "LYD" },
+  const { data, error, isLoading, mutate } = useSWR<RatesApiResponse>("/api/rates", fetcher, {
+    revalidateOnFocus: false,
+    refreshInterval: 60_000,
+    dedupingInterval: 30_000,
+  })
+
+  const [liveData, setLiveData] = useState<RatesApiResponse | null>(null)
+  const [liveStatus, setLiveStatus] = useState<LiveStatus>("idle")
+  const [feedbackTs, setFeedbackTs] = useState<number | null>(null)
+  const previousValuesRef = useRef<Record<string, number | null>>({})
+
+  const resolvedData = liveData ?? data ?? null
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    let source: EventSource | null = null
+    let retryTimer: number | null = null
+    let cancelled = false
+
+    const connect = () => {
+      if (cancelled) return
+      setLiveStatus((current) => (current === "open" ? "open" : "connecting"))
+      source = new EventSource("/api/rates/stream")
+
+      source.onopen = () => {
+        setLiveStatus("open")
+      }
+
+      source.onmessage = (event) => {
+        if (!event.data) return
+        try {
+          const payload = JSON.parse(event.data) as RatesApiResponse
+          setLiveData(payload)
+          setFeedbackTs(Date.now())
+          mutate(payload, false)
+        } catch (streamError) {
+          console.error("[PriceBoard] failed to parse stream message", streamError)
+        }
+      }
+
+      source.onerror = () => {
+        setLiveStatus("error")
+        source?.close()
+        if (!cancelled) {
+          retryTimer = window.setTimeout(connect, 5_000)
+        }
+      }
+    }
+
+    connect()
+
+    return () => {
+      cancelled = true
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer)
+      }
+      source?.close()
+    }
+  }, [mutate])
+
+  useEffect(() => {
+    if (feedbackTs === null) return
+    const timeoutId = window.setTimeout(() => setFeedbackTs(null), 3_500)
+    return () => window.clearTimeout(timeoutId)
+  }, [feedbackTs])
+
+  const rows = useMemo(() => {
+    const fxData = resolvedData?.fx
+    const goldData = resolvedData?.gold
+
+    const definitions: RateRowDefinition[] = [
       {
-        code: "SYP",
-        label: isRTL ? "الليرة السورية (USD/SYP)" : "Syrian Pound (USD/SYP)",
-        value: num(data?.fx.SYP.USD_SYP, 0),
+        id: "gold_k24",
+        label: isRTL ? "ذهب عيار 24" : "Gold 24K",
+        code: "24K",
+        unit: copy.perGram,
+        value: goldData?.k24 ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_k22",
+        label: isRTL ? "ذهب عيار 22" : "Gold 22K",
+        code: "22K",
+        unit: copy.perGram,
+        value: goldData?.k22 ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_k21",
+        label: isRTL ? "ذهب عيار 21" : "Gold 21K",
+        code: "21K",
+        unit: copy.perGram,
+        value: goldData?.k21 ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_k18",
+        label: isRTL ? "ذهب عيار 18" : "Gold 18K",
+        code: "18K",
+        unit: copy.perGram,
+        value: goldData?.k18 ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_k14",
+        label: isRTL ? "ذهب عيار 14" : "Gold 14K",
+        code: "14K",
+        unit: copy.perGram,
+        value: goldData?.k14 ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_tam",
+        label: isRTL ? "الليرة الذهبية (تم)" : "Full Ottoman Coin",
+        code: isRTL ? "الليرة التامة" : "Tam Coin",
+        unit: isRTL ? "₺ لكل ليرة ذهبية" : "TRY per coin",
+        value: goldData?.tamAltin ?? null,
+        suffix: "₺",
+        decimals: 0,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "gold_ounce",
+        label: isRTL ? "أونصة الذهب بالدولار" : "Gold Ounce (XAUUSD)",
+        code: "XAUUSD",
+        unit: copy.usdPerOunce,
+        value: goldData?.ounceUSD ?? null,
+        suffix: "USD",
+        decimals: 2,
+        icon: <GoldIcon />,
+      },
+      {
+        id: "fx_usd",
+        label: "USD",
+        code: "USD/TRY",
+        unit: copy.tryPer("USD"),
+        value: fxData?.USD_TRY ?? null,
+        suffix: "₺",
+        decimals: 3,
+        flagCode: "USD",
+      },
+      {
+        id: "fx_eur",
+        label: "EUR",
+        code: "EUR/TRY",
+        unit: copy.tryPer("EUR"),
+        value: fxData?.EUR_TRY ?? null,
+        suffix: "₺",
+        decimals: 3,
+        flagCode: "EUR",
+      },
+      {
+        id: "fx_gbp",
+        label: "GBP",
+        code: "GBP/TRY",
+        unit: copy.tryPer("GBP"),
+        value: fxData?.GBP_TRY ?? null,
+        suffix: "₺",
+        decimals: 3,
+        flagCode: "GBP",
+      },
+      {
+        id: "fx_lyd",
+        label: "LYD",
+        code: "LYD/TRY",
+        unit: copy.tryPer("LYD"),
+        value: fxData?.LYD_TRY ?? null,
+        suffix: "₺",
+        decimals: 3,
+        flagCode: "LYD",
+      },
+      {
+        id: "fx_egp",
+        label: "EGP",
+        code: "EGP/TRY",
+        unit: copy.tryPer("EGP"),
+        value: fxData?.EGP_TRY ?? null,
+        suffix: "₺",
+        decimals: 3,
+        flagCode: "EGP",
+      },
+      {
+        id: "fx_iqd",
+        label: "IQD",
+        code: "IQD/TRY",
+        unit: copy.tryPer("IQD"),
+        value: fxData?.IQD_TRY ?? null,
+        suffix: "₺",
+        decimals: 4,
+        flagCode: "IQD",
+      },
+      {
+        id: "fx_syp",
+        label: isRTL ? "الليرة السورية" : "Syrian Pound",
+        code: "USD/SYP",
+        unit: copy.sypPerUsd,
+        value: fxData?.SYP.USD_SYP ?? null,
         suffix: isRTL ? "ل.س" : "SYP",
+        decimals: 0,
         flagCode: "SYP",
       },
-      { code: "EGP", label: "EGP", value: num(data?.fx.EGP_TRY), suffix: "₺", flagCode: "EGP" },
-      { code: "IQD", label: "IQD", value: num(data?.fx.IQD_TRY, 4), suffix: "₺", flagCode: "IQD" },
-    ],
-    [data],
-  )
-
-  const crossChips = useMemo(() => {
-    if (!data) {
-      return [
-        { label: "EUR/USD", value: "—" },
-        { label: "GBP/USD", value: "—" },
-        { label: "EUR/GBP", value: "—" },
-      ]
-    }
-
-    const { fx } = data
-    const safeDivide = (numerator: number | null, denominator: number | null, decimals = 4) => {
-      if (!numerator || !denominator || denominator === 0) return "—"
-      return num(numerator / denominator, decimals)
-    }
-
-    return [
-      { label: "EUR/USD", value: safeDivide(fx.EUR_TRY, fx.USD_TRY, 4) },
-      { label: "GBP/USD", value: safeDivide(fx.GBP_TRY, fx.USD_TRY, 4) },
-      { label: "EUR/GBP", value: safeDivide(fx.EUR_TRY, fx.GBP_TRY, 4) },
     ]
-  }, [data])
+
+    const rowsWithTrend: RateRow[] = definitions.map((definition) => {
+      const prev = previousValuesRef.current[definition.id]
+      const current = definition.value
+      let trend: Trend = "flat"
+
+      if (prev !== null && prev !== undefined && current !== null && current !== undefined) {
+        let threshold = 0.0001
+        if (definition.decimals === 0) {
+          threshold = 0.5
+        } else if (definition.decimals === 3) {
+          threshold = 0.0005
+        } else if (definition.decimals === 4) {
+          threshold = 0.00005
+        } else if (definition.decimals === 2) {
+          threshold = 0.01
+        }
+
+        const delta = current - prev
+        if (Math.abs(delta) > threshold) {
+          trend = delta > 0 ? "up" : "down"
+        }
+      } else if (prev === undefined && current !== null) {
+        trend = "up"
+      }
+
+      return { ...definition, trend }
+    })
+
+    return rowsWithTrend
+  }, [resolvedData, copy, isRTL])
+
+  useEffect(() => {
+    if (!resolvedData) return
+    const next: Record<string, number | null> = {}
+    for (const row of rows) {
+      next[row.id] = row.value
+    }
+    previousValuesRef.current = next
+  }, [resolvedData, rows])
+
+  const goldRows = rows.slice(0, 7)
+  const fxRows = rows.slice(7)
+
+  const crossPairs = useMemo(() => {
+    const entries = [
+      {
+        id: "eurusd",
+        label: "EUR/USD",
+        value:
+          resolvedData?.fx.EUR_TRY && resolvedData?.fx.USD_TRY
+            ? resolvedData.fx.EUR_TRY / resolvedData.fx.USD_TRY
+            : null,
+      },
+      {
+        id: "gbpusd",
+        label: "GBP/USD",
+        value:
+          resolvedData?.fx.GBP_TRY && resolvedData?.fx.USD_TRY
+            ? resolvedData.fx.GBP_TRY / resolvedData.fx.USD_TRY
+            : null,
+      },
+      {
+        id: "eurgbp",
+        label: "EUR/GBP",
+        value:
+          resolvedData?.fx.EUR_TRY && resolvedData?.fx.GBP_TRY
+            ? resolvedData.fx.EUR_TRY / resolvedData.fx.GBP_TRY
+            : null,
+      },
+    ]
+
+    return entries.map((chip) => ({
+      ...chip,
+      display:
+        chip.value === null
+          ? "—"
+          : new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 4,
+            }).format(chip.value),
+    }))
+  }, [resolvedData, locale])
+
+  const staleSeconds =
+    resolvedData && Number.isFinite(resolvedData.meta.staleForMs)
+      ? Math.round(resolvedData.meta.staleForMs / 1000)
+      : null
+
+  const showErrorInline = Boolean(error && !resolvedData)
 
   return (
     <section
       dir={isRTL ? "rtl" : "ltr"}
-      className="relative isolate w-full overflow-hidden bg-gradient-to-br from-[#06110b] via-[#07150f] to-[#04110b] px-4 py-10 sm:px-6 lg:px-8"
+      className="relative isolate w-full overflow-hidden bg-gradient-to-br from-[#05110b] via-[#071810] to-[#04110b] px-3 py-9 sm:px-4"
     >
-      <div className="absolute inset-0 -z-10 opacity-70">
-        <div className="absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-emerald-400/20 blur-3xl" />
-        <div className="absolute bottom-0 left-10 h-64 w-64 rounded-full bg-teal-400/10 blur-[140px]" />
-        <div className="absolute -bottom-40 right-0 h-72 w-72 rounded-full bg-lime-400/10 blur-[160px]" />
+      <div className="absolute inset-0 -z-10 opacity-60">
+        <div className="absolute -top-24 left-1/3 h-44 w-44 -translate-x-1/2 rounded-full bg-emerald-400/15 blur-3xl sm:h-56 sm:w-56" />
+        <div className="absolute bottom-0 left-6 h-52 w-52 rounded-full bg-teal-400/10 blur-[130px]" />
+        <div className="absolute -bottom-28 right-4 h-52 w-52 rounded-full bg-lime-400/10 blur-[150px]" />
       </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 rounded-[28px] border border-emerald-200/10 bg-[#0a1711]/80 p-6 shadow-[0_45px_130px_rgba(6,17,11,0.55)] backdrop-blur-xl md:p-10 lg:p-12">
-        <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-emerald-200/40 bg-white/15 shadow-[0_0_18px_rgba(16,185,129,0.45)]">
-              <Image src="/images/liirat-logo.png" alt="Liirat logo" fill className="object-contain p-1.5" priority />
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 rounded-[24px] border border-emerald-200/12 bg-[#0b1711]/85 p-5 shadow-[0_35px_110px_rgba(6,17,11,0.52)] backdrop-blur-xl sm:p-6">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-emerald-200/30 bg-white/10 shadow-[0_0_14px_rgba(16,185,129,0.35)]">
+              <Image src="/images/liirat-logo.png" alt="Liirat logo" fill className="object-contain p-2" priority />
             </div>
             <div className="space-y-1">
-              <p className="text-base font-semibold tracking-[0.3em] text-emerald-100 uppercase sm:text-lg">
-                {LABELS.heading}
-              </p>
-              <p className="text-xs text-emerald-200/80 sm:text-sm">{LABELS.subheading}</p>
+              <h2 className="text-sm font-semibold uppercase tracking-[0.32em] text-emerald-100 sm:text-[0.85rem]">
+                {copy.heading}
+              </h2>
+              <p className="text-[12px] text-emerald-200/80 sm:text-sm">{copy.subheading}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-emerald-200/70 sm:text-xs">
-            <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
-            <span>
-              {LABELS.updated}: {data ? tsPretty(data.ts) : "—"}
-            </span>
+
+          <div className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.2em] text-emerald-200/70 sm:text-xs">
+            <LiveStatusPill status={liveStatus} liveMeta={resolvedData?.meta} copy={copy} />
+            <div className="flex items-center gap-2 rounded-full border border-emerald-200/20 bg-emerald-500/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.24em] text-emerald-100/90">
+              <Clock3 className="h-3.5 w-3.5 text-emerald-300" />
+              <span>
+                {copy.updated}:{" "}
+                {resolvedData ? formatRelativeTime(resolvedData.meta.fetchedAt, locale) : copy.waiting}
+              </span>
+            </div>
+            {resolvedData?.meta.stale && typeof staleSeconds === "number" && (
+              <Badge
+                variant="outline"
+                className="border-amber-300/60 bg-amber-400/10 text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-200"
+              >
+                {formatStale(staleSeconds, locale)}
+              </Badge>
+            )}
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <GlassCard title={LABELS.goldTitle}>
-            {goldRows.map((row) => (
-              <MetricRow key={row.label} label={row.label} value={row.value} suffix={row.suffix} />
-            ))}
-          </GlassCard>
+        {feedbackTs && resolvedData && !resolvedData.meta.stale && <InlineFeedback message={copy.success} />}
 
-          <GlassCard title={LABELS.fxTitle}>
-            {fxRows.map((row) => (
-              <MetricRow
-                key={row.label}
-                label={row.label}
-                value={row.value}
-                suffix={row.suffix}
-                flag={getFlag(row.flagCode)}
-                code={row.code}
-              />
-            ))}
-          </GlassCard>
+        {showErrorInline && <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} />}
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <RatesCard
+            title={copy.goldTitle}
+            rows={goldRows}
+            locale={locale}
+            isLoading={isLoading && !resolvedData}
+          />
+          <RatesCard
+            title={copy.fxTitle}
+            rows={fxRows}
+            locale={locale}
+            isLoading={isLoading && !resolvedData}
+          />
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {crossChips.map((chip) => (
-            <Chip key={chip.label} label={chip.label} value={chip.value} />
+        <div className="flex flex-wrap gap-2 pt-1">
+          {crossPairs.map((chip) => (
+            <Chip key={chip.id} label={chip.label} value={chip.display} />
           ))}
         </div>
 
-        {error && (
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-xs text-red-100 sm:text-sm">
-            <span>{isRTL ? "تعذر تحميل الأسعار. تأكد من الاتصال بالإنترنت أو أعد المحاولة." : "We couldn’t load live rates. Please check your connection and try again."}</span>
-            <button
-              type="button"
-              onClick={load}
-              className="rounded-full border border-red-200/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] text-red-100 transition hover:border-red-100 hover:text-red-50"
-            >
-              {LABELS.retry}
-            </button>
-          </div>
+        {!showErrorInline && error && resolvedData && (
+          <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} subtle />
         )}
       </div>
     </section>
   )
 }
 
-function GlassCard({ title, children }: { title: string; children: ReactNode }) {
+function RatesCard({
+  title,
+  rows,
+  locale,
+  isLoading,
+}: {
+  title: string
+  rows: RateRow[]
+  locale: string
+  isLoading: boolean
+}) {
   return (
-    <div className="relative overflow-hidden rounded-[24px] border border-emerald-200/15 bg-[#0d1c15]/80 p-6 shadow-[0_35px_90px_rgba(6,17,11,0.45)] backdrop-blur-2xl">
-      <div className="pointer-events-none absolute inset-0 opacity-70">
-        <div className="absolute -top-10 right-10 h-28 w-28 rounded-full bg-emerald-400/10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-emerald-500/10 blur-[130px]" />
+    <div className="relative overflow-hidden rounded-[20px] border border-emerald-200/12 bg-[#0f1f17]/80 p-4 shadow-[0_28px_80px_rgba(6,17,11,0.45)] backdrop-blur-2xl sm:p-5">
+      <div className="pointer-events-none absolute inset-0 opacity-50">
+        <div className="absolute -top-12 right-10 h-24 w-24 rounded-full bg-emerald-400/12 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-emerald-500/10 blur-[120px]" />
       </div>
-      <div className="relative flex items-center gap-3 pb-4">
-        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
-        <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-emerald-100 sm:text-[13px]">{title}</h3>
+      <div className="relative mb-3 flex items-center gap-2">
+        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.9)]" />
+        <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100 sm:text-[12px]">{title}</h3>
       </div>
-      <div className="relative space-y-3.5">{children}</div>
+      <div className="relative flex flex-col gap-2.5">
+          {rows.map((row) => (
+            <RateRowItem key={row.id} row={row} locale={locale} isLoading={isLoading} />
+          ))}
+      </div>
     </div>
   )
 }
 
-function MetricRow({
-  label,
-  value,
-  suffix,
-  flag,
-  code,
-}: {
-  label: string
-  value: string
-  suffix: string
-  flag?: ReactNode
-  code?: string
-}) {
+function RateRowItem({ row, locale, isLoading }: { row: RateRow; locale: string; isLoading: boolean }) {
+  const formatted = formatNumber(row.value, locale, row.decimals)
+
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-emerald-100/10 bg-white/8 px-3.5 py-3 text-emerald-100 shadow-[0_18px_55px_rgba(6,17,11,0.25)] backdrop-blur-lg">
+    <div className="flex items-center justify-between rounded-2xl border border-emerald-100/8 bg-white/5 px-3.5 py-2.5 text-emerald-50 shadow-[0_14px_45px_rgba(6,17,11,0.35)] backdrop-blur-lg transition hover:border-emerald-200/20">
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200/25 bg-emerald-400/10">
-          {flag ?? DEFAULT_FLAG}
+        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200/20 bg-emerald-400/10">
+          {row.icon ?? getFlag(row.flagCode)}
         </div>
         <div className="flex flex-col">
-          <span className="text-[13px] font-medium text-emerald-50/90">{label}</span>
-          {code && <span className="text-[10px] uppercase tracking-[0.25em] text-emerald-200/60">{code}</span>}
+          <span className="text-[13px] font-semibold text-emerald-50/90">{row.label}</span>
+          <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/60">
+            {row.code ?? row.unit}
+          </span>
+          <span className="text-[11px] text-emerald-200/70">{row.code ? row.unit : null}</span>
         </div>
       </div>
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-base font-semibold tracking-tight text-emerald-50 sm:text-lg">{value}</span>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200/70">{suffix}</span>
+
+      <div className="flex items-baseline gap-2">
+        {isLoading ? (
+          <div className="flex items-center gap-2">
+            <div className="h-3 w-12 animate-pulse rounded-full bg-emerald-200/30" />
+            <div className="h-3 w-6 animate-pulse rounded-full bg-emerald-200/20" />
+          </div>
+        ) : (
+          <>
+            <TrendIcon trend={row.trend} />
+            <span className="text-base font-semibold tracking-tight text-emerald-50 sm:text-lg" aria-live="polite">
+              {formatted}
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200/70">{row.suffix}</span>
+          </>
+        )}
       </div>
+    </div>
+  )
+}
+
+function TrendIcon({ trend }: { trend: Trend }) {
+  if (trend === "up") {
+    return <ArrowUpRight className="h-4 w-4 text-emerald-300" />
+  }
+  if (trend === "down") {
+    return <ArrowDownRight className="h-4 w-4 text-rose-300" />
+  }
+  return <Minus className="h-4 w-4 text-emerald-200/60" />
+}
+
+function LiveStatusPill({ status, liveMeta, copy }: { status: LiveStatus; liveMeta?: RatesApiResponse["meta"]; copy: Copy }) {
+  const isLive = liveMeta?.live && status === "open"
+
+  let label: string
+  switch (status) {
+    case "open":
+      label = copy.live
+      break
+    case "error":
+      label = copy.reconnecting
+      break
+    case "connecting":
+      label = copy.connecting
+      break
+    default:
+      label = copy.waiting
+  }
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em]",
+        isLive
+          ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.45)]"
+          : status === "error"
+            ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
+            : "border-emerald-200/25 bg-emerald-400/10 text-emerald-100/80",
+      )}
+    >
+      <Wifi className={cn("h-3.5 w-3.5", isLive ? "text-emerald-300" : status === "error" ? "text-amber-300" : "text-emerald-200/80")} />
+      <span>{label}</span>
+      {isLive && <span className="relative flex h-1.5 w-1.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
+        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300" />
+      </span>}
+    </span>
+  )
+}
+
+function InlineFeedback({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-2xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-50 shadow-[0_12px_28px_rgba(6,17,11,0.35)]">
+      <Sparkles className="h-4 w-4 text-emerald-200" />
+      <span className="font-medium">{message}</span>
+    </div>
+  )
+}
+
+function InlineError({ message, onRetry, copy, subtle = false }: { message: string; onRetry: () => void; copy: Copy; subtle?: boolean }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-2 text-sm",
+        subtle
+          ? "border-amber-200/30 bg-amber-500/5 text-amber-100"
+          : "border-rose-300/45 bg-rose-500/10 text-rose-50 shadow-[0_12px_30px_rgba(120,0,0,0.22)]",
+      )}
+    >
+      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+      <span className="flex-1 min-w-[180px]">{message}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] transition",
+          subtle
+            ? "border-amber-200/40 text-amber-100 hover:border-amber-100 hover:text-amber-50"
+            : "border-rose-200/40 text-rose-100 hover:border-rose-100 hover:text-rose-50",
+        )}
+      >
+        <RefreshCw className="h-3.5 w-3.5" />
+          <span>{copy.retry}</span>
+      </button>
     </div>
   )
 }
 
 function Chip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-100 shadow-[0_16px_40px_rgba(6,17,11,0.35)] backdrop-blur-md">
+    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/25 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-100 shadow-[0_16px_40px_rgba(6,17,11,0.35)] backdrop-blur-md">
       <span>{label}</span>
       <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100/90">{value}</span>
     </div>
