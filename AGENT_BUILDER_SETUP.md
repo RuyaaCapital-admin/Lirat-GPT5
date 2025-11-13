@@ -5,13 +5,16 @@ This guide explains how to connect your FMP Premium API endpoints to **OpenAI's 
 ## Important: Agent Builder Location
 
 **Agent Builder is part of OpenAI Platform**, not a separate service:
-- Access it at: https://platform.openai.com/chatkit/agent-builder
+
+- Access it at: <https://platform.openai.com/chatkit/agent-builder>
 - It's built into ChatKit/OpenAI Platform
 - Function tools are configured directly in OpenAI's interface
 
 ## Overview
 
+
 Your ChatKit agent will have access to three main function tools:
+
 1. **get_price** - Real-time price data
 2. **get_signal** - Trading signals and technical analysis
 3. **get_news** - Latest financial news
@@ -23,11 +26,14 @@ The agent will **only** call these functions when the user asks for specific dat
 All endpoints are ready and deployed:
 
 ### 1. Price Endpoint
+
+
 - **URL:** `https://your-domain.vercel.app/api/fmp/price?symbol=AAPL`
 - **Method:** GET
 - **Parameters:**
   - `symbol` (required): Stock, crypto, or forex symbol (e.g., "AAPL", "BTCUSD", "EURUSD")
 - **Response:**
+
 ```json
 {
   "symbol": "AAPL",
@@ -47,12 +53,15 @@ All endpoints are ready and deployed:
 ```
 
 ### 2. Signal Endpoint
+
 - **URL:** `https://your-domain.vercel.app/api/fmp/signal?symbol=AAPL&timeframe=1d`
+
 - **Method:** GET
 - **Parameters:**
   - `symbol` (required): Stock, crypto, or forex symbol
   - `timeframe` (optional): "1d", "1w", "1M" (default: "1d")
 - **Response:**
+
 ```json
 {
   "symbol": "AAPL",
@@ -85,12 +94,15 @@ All endpoints are ready and deployed:
 ```
 
 ### 3. News Endpoint
+
 - **URL:** `https://your-domain.vercel.app/api/fmp/news?symbol=AAPL&limit=5`
+
 - **Method:** GET
 - **Parameters:**
   - `symbol` (optional): Filter news by symbol
   - `limit` (optional): Number of articles (default: 10, max: 50)
 - **Response:**
+
 ```json
 {
   "articles": [
@@ -110,7 +122,7 @@ All endpoints are ready and deployed:
 
 ### Step 1: Access Agent Builder
 
-1. Go to **OpenAI Platform**: https://platform.openai.com
+1. Go to **OpenAI Platform**: <https://platform.openai.com>
 2. Navigate to **ChatKit** → **Agent Builder**
 3. Open your existing workflow (or create a new one)
 4. The workflow ID you're using: `wf_68fa5dfe9d2c8190a491802fdc61f86201d5df9b9d3ae103`
@@ -122,13 +134,17 @@ In your ChatKit Agent Builder workflow (inside OpenAI Platform), add three Funct
 #### Function 1: `get_price`
 
 1. **Function Name:** `get_price`
+
 2. **Description:**
-```
+
+```text
 Get the current price, change, volume, and market data for any stock, crypto, or forex symbol. 
 Use this when the user asks about price, current value, or market data for a symbol.
 Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doing?"
 ```
+
 3. **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -141,7 +157,9 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
   "required": ["symbol"]
 }
 ```
+
 4. **API Configuration (in OpenAI Agent Builder):**
+
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price`
    - **Query Parameters:** `symbol={{symbol}}`
@@ -151,14 +169,18 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
 #### Function 2: `get_signal`
 
 1. **Function Name:** `get_signal`
+
 2. **Description:**
-```
+
+```text
 Get trading signals and technical analysis for any symbol. Provides RSI, MACD indicators, 
 and generates a BULLISH/BEARISH/NEUTRAL signal with reasons.
 Use this when the user asks about trading signals, technical analysis, or whether to buy/sell.
 Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 ```
+
 3. **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -177,7 +199,9 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
   "required": ["symbol"]
 }
 ```
+
 4. **API Configuration (in OpenAI Agent Builder):**
+
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/signal`
    - **Query Parameters:** `symbol={{symbol}}&timeframe={{timeframe}}`
@@ -187,13 +211,17 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 #### Function 3: `get_news`
 
 1. **Function Name:** `get_news`
+
 2. **Description:**
-```
+
+```text
 Get the latest financial news. Can filter by symbol or get general market news.
 Use this when the user asks about news, recent events, or market updates.
 Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto news"
 ```
+
 3. **Input Schema:**
+
 ```json
 {
   "type": "object",
@@ -212,7 +240,9 @@ Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto new
   }
 }
 ```
+
 4. **API Configuration (in OpenAI Agent Builder):**
+
    - **Method:** GET
    - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/news`
    - **Query Parameters:** `symbol={{symbol}}&limit={{limit}}`
@@ -223,7 +253,7 @@ Examples: "What's the latest news?", "Any news about AAPL?", "Show me crypto new
 
 In your OpenAI Agent Builder workflow, update the system prompt (usually in the "Assistant" or "System" node) to make the agent conversational and smart about when to use functions:
 
-```
+```text
 You are a friendly, conversational AI trading assistant for LIIRAT. You help users with market data, trading signals, and financial news.
 
 **IMPORTANT - Function Usage:**
@@ -252,6 +282,7 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
 ```
 
 ### Step 4: Test Your Functions
+
 
 1. **Test in OpenAI Agent Builder:**
    - Use the "Test" or "Preview" feature in OpenAI's Agent Builder interface
@@ -323,4 +354,3 @@ To update: Go to Agent Builder → Edit each function → Update the URL → Sav
 Your current ChatKit workflow ID: `wf_68fa5dfe9d2c8190a491802fdc61f86201d5df9b9d3ae103`
 
 This is configured in your `.env.local` as `CHATKIT_WORKFLOW_ID`.
-
