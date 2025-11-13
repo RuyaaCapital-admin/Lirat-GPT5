@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { ModernPanel, ModernPanelContent, ModernPanelHeader, ModernPanelTitle } from "@/components/modern-panel"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,15 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Label } from "@/components/ui/label"
 import { Bell, Plus, Trash2, TrendingUp, TrendingDown, Edit, RefreshCw, Search } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
-import { getTranslation } from "@/lib/i18n"
+import { getTranslation, convertToEnglishNumbers } from "@/lib/i18n"
+import { loadAlerts, saveAlerts, onAlertsUpdated, StoredAlert } from "@/lib/alerts-storage"
 import { toast } from "sonner"
-import { convertToEnglishNumbers } from "@/lib/i18n"
 
 interface Alert {
   id: string
   symbol: string
-  type: "price" | "event"
-  condition: string
+  condition: "above" | "below"
   value: number
   status: "active" | "triggered" | "expired"
   createdAt: Date
@@ -37,6 +36,24 @@ interface FMPSymbol {
   name: string
   exchangeShortName: string
 }
+
+const fromStored = (alert: StoredAlert): Alert => ({
+  id: alert.id,
+  symbol: alert.symbol,
+  condition: alert.condition,
+  value: alert.value,
+  status: alert.status,
+  createdAt: new Date(alert.createdAt),
+})
+
+const toStored = (alert: Alert): StoredAlert => ({
+  id: alert.id,
+  symbol: alert.symbol,
+  condition: alert.condition,
+  value: alert.value,
+  status: alert.status,
+  createdAt: alert.createdAt.toISOString(),
+})
 
 const INITIAL_SYMBOLS = [
   { value: "AAPL", label: "Apple Inc" },
@@ -57,13 +74,58 @@ export default function AlertsPage() {
   const [searchingSymbols, setSearchingSymbols] = useState(false)
   const [availableSymbols, setAvailableSymbols] = useState<{ value: string; label: string }[]>(INITIAL_SYMBOLS)
 
-  const [newAlert, setNewAlert] = useState({
+  const [newAlert, setNewAlert] = useState<{ symbol: string; condition: "above" | "below"; value: string }>({
     symbol: "AAPL",
     condition: "above",
     value: "",
   })
 
   const { locale } = useLocale()
+  const skipNextSync = useRef(false)
+
+  const formatAlertTimestamp = (date: Date) => {
+    try {
+      const formatter = new Intl.DateTimeFormat(
+        locale === "ar" ? "ar-EG-u-ca-gregory-nu-latn" : "en-GB",
+        {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        },
+      )
+      return convertToEnglishNumbers(formatter.format(date))
+    } catch {
+      return convertToEnglishNumbers(date.toISOString())
+    }
+  }
+
+  useEffect(() => {
+    const stored = loadAlerts()
+    if (stored.length) {
+      setAlerts(stored.map(fromStored))
+    }
+
+    const unsubscribe = onAlertsUpdated(() => {
+      if (skipNextSync.current) {
+        skipNextSync.current = false
+        return
+      }
+      const next = loadAlerts().map(fromStored)
+      setAlerts(next)
+    })
+
+    return unsubscribe
+  }, [])
+
+  const updateAlerts = (updater: (prev: Alert[]) => Alert[]) => {
+    setAlerts((prev) => {
+      const next = updater(prev)
+      skipNextSync.current = true
+      saveAlerts(next.map(toStored))
+      return next
+    })
+  }
 
   const searchFMPSymbols = async (query: string) => {
     if (!query || query.length < 1) {
@@ -139,22 +201,25 @@ export default function AlertsPage() {
     return () => clearInterval(interval)
   }, [availableSymbols])
 
-  const handleCreateAlert = async () => {
+  const handleCreateAlert = () => {
     if (!newAlert.value) return
 
     const alert: Alert = {
       id: Date.now().toString(),
       symbol: newAlert.symbol,
-      type: "price",
       condition: newAlert.condition,
       value: Number.parseFloat(newAlert.value),
       status: "active",
       createdAt: new Date(),
     }
 
-    setAlerts((prev) => [alert, ...prev])
+    updateAlerts((prev) => [alert, ...prev])
     setNewAlert({ symbol: "AAPL", condition: "above", value: "" })
-    toast.success("Price alert created successfully!")
+    toast.success(
+      locale === "ar"
+        ? `تم إنشاء تنبيه للسعر ${convertToEnglishNumbers(alert.value.toString())}`
+        : `Price alert created for ${alert.symbol} at ${convertToEnglishNumbers(alert.value.toString())}`,
+    )
   }
 
   const handleEditAlert = (alert: Alert) => {
@@ -165,15 +230,16 @@ export default function AlertsPage() {
   const handleUpdateAlert = () => {
     if (!editingAlert) return
 
-    setAlerts((prev) => prev.map((alert) => (alert.id === editingAlert.id ? editingAlert : alert)))
+    const updated = editingAlert
+    updateAlerts((prev) => prev.map((alert) => (alert.id === updated.id ? updated : alert)))
     setEditDialogOpen(false)
     setEditingAlert(null)
-    toast.success("Alert updated successfully!")
+    toast.success(locale === "ar" ? "تم تحديث التنبيه بنجاح" : "Alert updated successfully!")
   }
 
   const handleDeleteAlert = (id: string) => {
-    setAlerts((prev) => prev.filter((alert) => alert.id !== id))
-    toast.success("Alert deleted successfully!")
+    updateAlerts((prev) => prev.filter((alert) => alert.id !== id))
+    toast.success(locale === "ar" ? "تم حذف التنبيه" : "Alert deleted successfully!")
   }
 
   const getStatusBadge = (status: Alert["status"]) => {
@@ -218,48 +284,50 @@ export default function AlertsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {locale === "ar" ? "التنبيهات النشطة" : "Active Alerts"}
-            </CardTitle>
-            <Bell className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeAlerts}</div>
-            <p className="text-xs text-muted-foreground">
-              {locale === "ar" ? "قيد المراقبة حالياً" : "Currently monitoring"}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {locale === "ar" ? "التنبيهات النشطة" : "Active Alerts"}
+              </CardTitle>
+              <Bell className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{convertToEnglishNumbers(activeAlerts)}</div>
+              <p className="text-xs text-muted-foreground">
+                {locale === "ar" ? "قيد المراقبة حالياً" : "Currently monitoring"}
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {locale === "ar" ? "المُطلقة اليوم" : "Triggered Today"}
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{triggeredAlerts}</div>
-            <p className="text-xs text-muted-foreground">{locale === "ar" ? "تنبيهات مُطلقة" : "Alerts triggered"}</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {locale === "ar" ? "المُطلقة اليوم" : "Triggered Today"}
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{convertToEnglishNumbers(triggeredAlerts)}</div>
+              <p className="text-xs text-muted-foreground">
+                {locale === "ar" ? "تنبيهات مُطلقة" : "Alerts triggered"}
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {locale === "ar" ? "إجمالي التنبيهات" : "Total Alerts"}
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{alerts.length}</div>
-            <p className="text-xs text-muted-foreground">{locale === "ar" ? "كل الوقت" : "All time"}</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {locale === "ar" ? "إجمالي التنبيهات" : "Total Alerts"}
+              </CardTitle>
+              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{convertToEnglishNumbers(alerts.length)}</div>
+              <p className="text-xs text-muted-foreground">{locale === "ar" ? "كل الوقت" : "All time"}</p>
+            </CardContent>
+          </Card>
+        </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Create Alert */}
@@ -399,7 +467,9 @@ export default function AlertsPage() {
                     step="0.0001"
                     placeholder={locale === "ar" ? "أدخل مستوى السعر" : "Enter price level"}
                     value={newAlert.value}
-                    onChange={(e) => setNewAlert({ ...newAlert, value: e.target.value })}
+                    onChange={(e) =>
+                      setNewAlert({ ...newAlert, value: convertToEnglishNumbers(e.target.value) })
+                    }
                   />
                 </div>
 
@@ -429,52 +499,65 @@ export default function AlertsPage() {
                     </p>
                   </div>
                 ) : (
-                  alerts.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-2">
-                          {alert.condition === "above" ? (
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
-                          )}
-                          <span className="font-mono font-medium">{alert.symbol}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {alert.condition} {formatPrice(alert.value, alert.symbol)}
-                        </div>
-                        {getStatusBadge(alert.status)}
-                        {currentPrices[alert.symbol] && (
-                          <div className="text-xs text-muted-foreground">
-                            {locale === "ar" ? "الحالي:" : "Current:"}{" "}
-                            {formatPrice(currentPrices[alert.symbol].price, alert.symbol)}
+                  alerts.map((alert) => {
+                    const conditionLabel =
+                      locale === "ar"
+                        ? alert.condition === "above"
+                          ? "فوق"
+                          : "تحت"
+                        : alert.condition === "above"
+                          ? "above"
+                          : "below"
+
+                    return (
+                      <div
+                        key={alert.id}
+                        className="flex flex-col gap-4 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/50 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            {alert.condition === "above" ? (
+                              <TrendingUp className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4 text-red-500" />
+                            )}
+                            <span className="font-mono font-medium">{alert.symbol}</span>
                           </div>
-                        )}
+                          <div className="text-sm text-muted-foreground">
+                            {conditionLabel} {formatPrice(alert.value, alert.symbol)}
+                          </div>
+                          {getStatusBadge(alert.status)}
+                          {currentPrices[alert.symbol] && (
+                            <div className="text-xs text-muted-foreground">
+                              {locale === "ar" ? "الحالي:" : "Current:"}{" "}
+                              {formatPrice(currentPrices[alert.symbol].price, alert.symbol)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatAlertTimestamp(alert.createdAt)}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditAlert(alert)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAlert(alert.id)}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-muted-foreground">{alert.createdAt.toLocaleDateString()}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditAlert(alert)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAlert(alert.id)}
-                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </ModernPanelContent>
@@ -541,7 +624,12 @@ export default function AlertsPage() {
                   type="number"
                   step="0.0001"
                   value={editingAlert.value}
-                  onChange={(e) => setEditingAlert({ ...editingAlert, value: Number.parseFloat(e.target.value) || 0 })}
+                  onChange={(e) =>
+                    setEditingAlert({
+                      ...editingAlert,
+                      value: Number.parseFloat(convertToEnglishNumbers(e.target.value)) || 0,
+                    })
+                  }
                 />
               </div>
 

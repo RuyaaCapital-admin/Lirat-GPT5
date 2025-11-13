@@ -30,26 +30,26 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <style>{`
-          html {
-            --font-sans: ${inter.variable};
-            --font-arabic: ${notoSansArabic.variable};
-          }
-          body {
-            font-family: ${inter.style.fontFamily};
-          }
-          [dir="rtl"] {
-            font-family: ${notoSansArabic.style.fontFamily};
-          }
-        `}</style>
-      </head>
-      <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange={false}>
-          <LocaleProvider>{children}</LocaleProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <style>{`
+            html {
+              --font-sans: ${inter.variable};
+              --font-arabic: ${notoSansArabic.variable};
+            }
+            body {
+              font-family: ${inter.style.fontFamily};
+            }
+            [dir="rtl"] {
+              font-family: ${notoSansArabic.style.fontFamily};
+            }
+          `}</style>
+        </head>
+        <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
+            <LocaleProvider>{children}</LocaleProvider>
+          </ThemeProvider>
+        </body>
+      </html>
   )
 }
