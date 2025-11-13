@@ -14,11 +14,11 @@ export const chatkitOptions = {
   },
   startScreen: {
     greeting: "What can I help with today?",
-    starterPrompts: [
-      "Analyze current market trends",
-      "What's the outlook for gold?",
-      "Help me understand risk management",
-      "Explain technical indicators",
+    prompts: [
+      { icon: "chart-line", label: "Analyze current market trends", prompt: "Analyze current market trends" },
+      { icon: "coins", label: "What's the outlook for gold?", prompt: "What's the outlook for gold?" },
+      { icon: "shield", label: "Help me understand risk management", prompt: "Help me understand risk management" },
+      { icon: "bar-chart", label: "Explain technical indicators", prompt: "Explain technical indicators" },
     ],
   },
 }
