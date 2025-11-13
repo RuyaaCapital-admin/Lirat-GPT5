@@ -46,20 +46,35 @@ export async function POST(request: Request) {
     console.log("[ChatKit] Using API key prefix:", apiKey.substring(0, 15) + "...")
     console.log("[ChatKit] Workflow ID:", workflowId)
 
-    // Use OpenAI REST API directly for ChatKit sessions
-    const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "OpenAI-Beta": "chatkit_beta=v1", // REQUIRED for ChatKit API
-      },
-      body: JSON.stringify({
-        workflow: {
-          id: workflowId,
-        },
-      }),
-    })
+            // Get user ID from authenticated session
+            const authHeader = request.headers.get('authorization')
+            let userId: string
+            if (authHeader) {
+              const token = authHeader.replace('Bearer ', '')
+              const supabase = createServerClient()
+              const { data: { user } } = await supabase.auth.getUser(token)
+              // Use authenticated user ID, or generate a unique ID
+              userId = user?.id || `user-${crypto.randomUUID()}`
+            } else {
+              // Fallback: generate a unique user ID for unauthenticated requests
+              userId = `user-${crypto.randomUUID()}`
+            }
+
+            // Use OpenAI REST API directly for ChatKit sessions
+            const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
+              method: "POST",
+              headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "OpenAI-Beta": "chatkit_beta=v1", // REQUIRED for ChatKit API
+              },
+              body: JSON.stringify({
+                workflow: {
+                  id: workflowId,
+                },
+                user: userId, // REQUIRED: unique user identifier
+              }),
+            })
 
     if (!response.ok) {
       const errorText = await response.text()
