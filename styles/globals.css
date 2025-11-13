@@ -1,0 +1,388 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* LIIRAT Brand Colors - Green Theme */
+  --liirat-green: oklch(0.55 0.15 142);
+  --liirat-green-light: oklch(0.65 0.12 142);
+  --liirat-green-dark: oklch(0.45 0.18 142);
+
+  --background: oklch(0.99 0.005 106.423);
+  --foreground: oklch(0.145 0.012 106.423);
+  --card: oklch(0.99 0.005 106.423);
+  --card-foreground: oklch(0.145 0.012 106.423);
+  --popover: oklch(0.99 0.005 106.423);
+  --popover-foreground: oklch(0.145 0.012 106.423);
+  --primary: var(--liirat-green);
+  --primary-foreground: oklch(0.985 0.005 106.423);
+  --secondary: oklch(0.96 0.008 106.423);
+  --secondary-foreground: oklch(0.205 0.012 106.423);
+  --muted: oklch(0.96 0.008 106.423);
+  --muted-foreground: oklch(0.556 0.012 106.423);
+  --accent: oklch(0.96 0.008 106.423);
+  --accent-foreground: oklch(0.205 0.012 106.423);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0.005 106.423);
+  --border: oklch(0.922 0.008 106.423);
+  --input: oklch(0.922 0.008 106.423);
+  --ring: var(--liirat-green);
+  --chart-1: var(--liirat-green);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.985 0.005 106.423);
+  --sidebar-foreground: oklch(0.145 0.012 106.423);
+  --sidebar-primary: var(--liirat-green);
+  --sidebar-primary-foreground: oklch(0.985 0.005 106.423);
+  --sidebar-accent: oklch(0.96 0.008 106.423);
+  --sidebar-accent-foreground: oklch(0.205 0.012 106.423);
+  --sidebar-border: oklch(0.922 0.008 106.423);
+  --sidebar-ring: var(--liirat-green);
+}
+
+.dark {
+  --background: oklch(0.08 0.015 264.376);
+  --foreground: oklch(0.985 0.005 106.423);
+  --card: oklch(0.1 0.018 264.376);
+  --card-foreground: oklch(0.985 0.005 106.423);
+  --popover: oklch(0.08 0.015 264.376);
+  --popover-foreground: oklch(0.985 0.005 106.423);
+  --primary: var(--liirat-green-light);
+  --primary-foreground: oklch(0.08 0.015 264.376);
+  --secondary: oklch(0.15 0.025 264.376);
+  --secondary-foreground: oklch(0.985 0.005 106.423);
+  --muted: oklch(0.15 0.025 264.376);
+  --muted-foreground: oklch(0.708 0.012 106.423);
+  --accent: oklch(0.15 0.025 264.376);
+  --accent-foreground: oklch(0.985 0.005 106.423);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.985 0.005 106.423);
+  --border: oklch(0.15 0.025 264.376);
+  --input: oklch(0.15 0.025 264.376);
+  --ring: var(--liirat-green-light);
+  --chart-1: var(--liirat-green-light);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.08 0.015 264.376);
+  --sidebar-foreground: oklch(0.985 0.005 106.423);
+  --sidebar-primary: var(--liirat-green-light);
+  --sidebar-primary-foreground: oklch(0.08 0.015 264.376);
+  --sidebar-accent: oklch(0.15 0.025 264.376);
+  --sidebar-accent-foreground: oklch(0.985 0.005 106.423);
+  --sidebar-border: oklch(0.15 0.025 264.376);
+  --sidebar-ring: var(--liirat-green-light);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* LIIRAT Logo Background Watermark */
+    background-image: url("/images/liirat-logo.png");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 300px 300px;
+    background-blend-mode: overlay;
+  }
+
+  /* Light mode watermark */
+  body:not(.dark) {
+    background-image: url("/images/liirat-logo.png");
+    opacity: 1;
+  }
+
+  body:not(.dark)::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("/images/liirat-logo.png");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 300px 300px;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* Dark mode watermark */
+  .dark::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("/images/liirat-logo.png");
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: 300px 300px;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: -1;
+    filter: brightness(1.5);
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
+  }
+
+  [dir="rtl"] .font-sans {
+    font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* Financial data styling */
+  .positive {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  .negative {
+    @apply text-red-600 dark:text-red-400;
+  }
+
+  .neutral {
+    @apply text-muted-foreground;
+  }
+
+  /* Chart container styling */
+  .chart-container {
+    @apply relative w-full h-full;
+  }
+
+  /* Loading spinner animation */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+/* Neumorphic Card Styles */
+.neumorphic-card {
+  @apply rounded-2xl border border-white/5 dark:border-white/5;
+  /* Light mode neumorphic shadows */
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.1),
+    -6px -6px 12px rgba(255, 255, 255, 0.7),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .neumorphic-card {
+  /* Dark mode neumorphic shadows */
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.35),
+    -6px -6px 12px rgba(255, 255, 255, 0.03),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Deep Curved Hall Effect */
+.curved-hall {
+  position: relative;
+  overflow: hidden;
+}
+
+.curved-hall::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.04) 40%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.dark .curved-hall::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.01) 40%,
+    transparent 70%
+  );
+}
+
+/* Custom scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Data table styling */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply bg-muted/50 font-medium text-left p-2 border-b;
+}
+
+.data-table td {
+  @apply p-2 border-b border-border/50;
+}
+
+.data-table tr:hover {
+  @apply bg-muted/30;
+}
+
+/* Chat interface styling */
+.chat-message {
+  @apply max-w-none text-sm leading-relaxed;
+}
+
+.chat-message p {
+  @apply mb-2 last:mb-0;
+}
+
+.chat-message ul,
+.chat-message ol {
+  @apply mb-2 pl-4;
+}
+
+.chat-message ul {
+  @apply list-disc;
+}
+
+.chat-message ol {
+  @apply list-decimal;
+}
+
+.chat-message li {
+  @apply mb-1;
+}
+
+.chat-message h1,
+.chat-message h2,
+.chat-message h3 {
+  @apply font-semibold mb-2 mt-4 first:mt-0;
+}
+
+.chat-message h1 {
+  @apply text-lg;
+}
+
+.chat-message h2 {
+  @apply text-base;
+}
+
+.chat-message h3 {
+  @apply text-sm;
+}
+
+.chat-message code {
+  @apply bg-muted px-1 py-0.5 rounded text-xs font-mono;
+}
+
+.chat-message pre {
+  @apply bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2;
+}
+
+.chat-message blockquote {
+  @apply border-l-4 border-muted-foreground/20 pl-4 italic mb-2;
+}
+
+.chat-message strong {
+  @apply font-semibold;
+}
+
+.chat-message em {
+  @apply italic;
+}
+
+/* Price ticker styling */
+.price-ticker {
+  @apply flex items-center space-x-6;
+  animation: scroll 60s linear infinite;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.price-ticker:hover {
+  animation-play-state: paused;
+}

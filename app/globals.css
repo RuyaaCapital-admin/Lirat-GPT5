@@ -1,0 +1,393 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Refined LIIRAT palette */
+  --liirat-emerald: oklch(0.68 0.15 148);
+  --liirat-fern: oklch(0.74 0.08 150);
+  --liirat-forest: oklch(0.48 0.06 145);
+  --liirat-stone: oklch(0.32 0.02 110);
+  --liirat-cloud: oklch(0.97 0.01 120);
+
+  --background: oklch(0.982 0.012 140);
+  --foreground: oklch(0.22 0.012 110);
+  --card: oklch(0.99 0.01 150);
+  --card-foreground: oklch(0.24 0.012 110);
+  --popover: oklch(0.992 0.008 150);
+  --popover-foreground: oklch(0.24 0.012 110);
+  --primary: var(--liirat-emerald);
+  --primary-foreground: oklch(0.995 0.005 140);
+  --secondary: oklch(0.962 0.01 140);
+  --secondary-foreground: oklch(0.32 0.02 110);
+  --muted: oklch(0.955 0.008 140);
+  --muted-foreground: oklch(0.49 0.02 125);
+  --accent: oklch(0.96 0.012 150);
+  --accent-foreground: oklch(0.28 0.018 120);
+  --destructive: oklch(0.58 0.23 28);
+  --destructive-foreground: oklch(0.995 0.005 140);
+  --border: oklch(0.91 0.01 135);
+  --input: oklch(0.92 0.01 135);
+  --ring: var(--liirat-emerald);
+  --chart-1: var(--liirat-emerald);
+  --chart-2: oklch(0.64 0.13 190);
+  --chart-3: oklch(0.58 0.14 86);
+  --chart-4: oklch(0.72 0.1 50);
+  --chart-5: oklch(0.51 0.16 310);
+  --radius: 0.9rem;
+  --sidebar: oklch(0.985 0.01 140);
+  --sidebar-foreground: oklch(0.26 0.012 110);
+  --sidebar-primary: var(--liirat-emerald);
+  --sidebar-primary-foreground: oklch(0.995 0.005 140);
+  --sidebar-accent: oklch(0.965 0.01 150);
+  --sidebar-accent-foreground: oklch(0.3 0.02 120);
+  --sidebar-border: oklch(0.92 0.01 140);
+  --sidebar-ring: var(--liirat-emerald);
+}
+
+.dark {
+  --background: oklch(0.14 0.015 240);
+  --foreground: oklch(0.96 0.01 140);
+  --card: oklch(0.16 0.012 235);
+  --card-foreground: oklch(0.96 0.01 140);
+  --popover: oklch(0.15 0.012 235);
+  --popover-foreground: oklch(0.96 0.01 140);
+  --primary: oklch(0.7 0.12 145);
+  --primary-foreground: oklch(0.12 0.01 240);
+  --secondary: oklch(0.22 0.015 240);
+  --secondary-foreground: oklch(0.94 0.01 140);
+  --muted: oklch(0.23 0.012 240);
+  --muted-foreground: oklch(0.68 0.012 140);
+  --accent: oklch(0.24 0.015 240);
+  --accent-foreground: oklch(0.94 0.01 140);
+  --destructive: oklch(0.4 0.18 28);
+  --destructive-foreground: oklch(0.98 0.005 140);
+  --border: oklch(0.23 0.012 240);
+  --input: oklch(0.23 0.012 240);
+  --ring: oklch(0.7 0.12 145);
+  --chart-1: oklch(0.72 0.12 145);
+  --chart-2: oklch(0.63 0.13 198);
+  --chart-3: oklch(0.62 0.16 75);
+  --chart-4: oklch(0.58 0.18 20);
+  --chart-5: oklch(0.56 0.16 312);
+  --sidebar: oklch(0.14 0.015 240);
+  --sidebar-foreground: oklch(0.96 0.01 140);
+  --sidebar-primary: oklch(0.7 0.12 145);
+  --sidebar-primary-foreground: oklch(0.12 0.01 240);
+  --sidebar-accent: oklch(0.22 0.015 240);
+  --sidebar-accent-foreground: oklch(0.94 0.01 140);
+  --sidebar-border: oklch(0.23 0.012 240);
+  --sidebar-ring: oklch(0.7 0.12 145);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background:
+      radial-gradient(circle at 10% 20%, rgba(120, 220, 160, 0.08), transparent 55%),
+      radial-gradient(circle at 90% 10%, rgba(120, 200, 255, 0.14), transparent 60%),
+      radial-gradient(circle at 50% 80%, rgba(180, 200, 180, 0.12), transparent 70%),
+      linear-gradient(135deg, rgba(244, 248, 242, 0.95), rgba(236, 243, 241, 0.95));
+    min-height: 100vh;
+  }
+
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 360px;
+    opacity: 0.055;
+    mix-blend-mode: multiply;
+    background-image: url("/images/liirat-logo.png");
+  }
+
+  body::after {
+    background-size: 520px;
+    opacity: 0.03;
+    filter: blur(2px);
+  }
+
+  .dark body::before,
+  .dark body::after {
+    opacity: 0.07;
+    filter: brightness(1.3) saturate(0.9);
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
+  }
+
+  [dir="rtl"] .font-sans {
+    font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
+  }
+
+  /* Smooth transitions for theme changes */
+  * {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  /* Financial data styling */
+  .positive {
+    @apply text-green-600 dark:text-green-400;
+  }
+
+  .negative {
+    @apply text-red-600 dark:text-red-400;
+  }
+
+  .neutral {
+    @apply text-muted-foreground;
+  }
+
+  /* Chart container styling */
+  .chart-container {
+    @apply relative w-full h-full;
+  }
+
+  /* Loading spinner animation */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+}
+
+/* Neumorphic Card Styles */
+.neumorphic-card {
+  @apply rounded-2xl border border-white/5 dark:border-white/5;
+  /* Light mode neumorphic shadows */
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.1),
+    -6px -6px 12px rgba(255, 255, 255, 0.7),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.dark .neumorphic-card {
+  /* Dark mode neumorphic shadows */
+  box-shadow:
+    6px 6px 12px rgba(0, 0, 0, 0.35),
+    -6px -6px 12px rgba(255, 255, 255, 0.03),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.05),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Deep Curved Hall Effect */
+.curved-hall {
+  position: relative;
+  overflow: hidden;
+}
+
+.curved-hall::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  height: 60%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.04) 40%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.dark .curved-hall::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.01) 40%,
+    transparent 70%
+  );
+}
+
+/* Custom scrollbar for modern look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Data table styling */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply bg-muted/50 font-medium text-left p-2 border-b;
+}
+
+.data-table td {
+  @apply p-2 border-b border-border/50;
+}
+
+.data-table tr:hover {
+  @apply bg-muted/30;
+}
+
+/* Chat interface styling */
+.chat-message {
+  @apply max-w-none text-sm leading-relaxed;
+}
+
+.chat-message p {
+  @apply mb-2 last:mb-0;
+}
+
+.chat-message ul,
+.chat-message ol {
+  @apply mb-2 pl-4;
+}
+
+.chat-message ul {
+  @apply list-disc;
+}
+
+.chat-message ol {
+  @apply list-decimal;
+}
+
+.chat-message li {
+  @apply mb-1;
+}
+
+.chat-message h1,
+.chat-message h2,
+.chat-message h3 {
+  @apply font-semibold mb-2 mt-4 first:mt-0;
+}
+
+.chat-message h1 {
+  @apply text-lg;
+}
+
+.chat-message h2 {
+  @apply text-base;
+}
+
+.chat-message h3 {
+  @apply text-sm;
+}
+
+.chat-message code {
+  @apply bg-muted px-1 py-0.5 rounded text-xs font-mono;
+}
+
+.chat-message pre {
+  @apply bg-muted p-2 rounded text-xs font-mono overflow-x-auto mb-2;
+}
+
+.chat-message blockquote {
+  @apply border-l-4 border-muted-foreground/20 pl-4 italic mb-2;
+}
+
+.chat-message strong {
+  @apply font-semibold;
+}
+
+.chat-message em {
+  @apply italic;
+}
+
+/* Price ticker styling */
+.price-ticker {
+  @apply flex items-center space-x-6;
+  animation: scroll 60s linear infinite;
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.price-ticker:hover {
+  animation-play-state: paused;
+}
+
+.hero-animate {
+  opacity: 0;
+  transform: translateY(22px);
+  animation: heroFade 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: var(--hero-delay, 0s);
+  will-change: opacity, transform;
+}
+
+@keyframes heroFade {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
