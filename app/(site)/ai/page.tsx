@@ -8,12 +8,20 @@ import { AiChartPlaceholder } from "@/components/ai/chart-placeholder"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
 
-// Dynamically import ChatKit bubble with SSR disabled to prevent hydration errors
+// Dynamically import ChatKit components with SSR disabled to prevent hydration errors
 const LiiratChatBubble = dynamic(
   () => import("@/components/ai/chat-bubble").then((mod) => ({ default: mod.LiiratChatBubble })),
   {
     ssr: false,
-    loading: () => null, // Don't show anything while loading
+    loading: () => null,
+  }
+)
+
+const LiiratChatDesktop = dynamic(
+  () => import("@/components/ai/chat-desktop").then((mod) => ({ default: mod.LiiratChatDesktop })),
+  {
+    ssr: false,
+    loading: () => null,
   }
 )
 
@@ -126,7 +134,16 @@ export default function AIPage() {
           </div>
         </div>
       </div>
-      <LiiratChatBubble />
+
+      {/* Desktop: Full ChatKit panel */}
+      <section className="mt-6 space-y-4">
+        <LiiratChatDesktop />
+
+        {/* Mobile: Floating bubble (only visible on small screens) */}
+        <div className="lg:hidden">
+          <LiiratChatBubble />
+        </div>
+      </section>
     </div>
   )
 }

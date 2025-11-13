@@ -1,10 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useChatKit, ChatKit } from "@openai/chatkit-react"
 import { chatkitOptions } from "@/lib/chatkitOptions"
 
-function ChatKitRenderer() {
+export function LiiratChatPanel() {
   const { control } = useChatKit({
     ...chatkitOptions,
     api: {
@@ -14,7 +13,7 @@ function ChatKitRenderer() {
         const res = await fetch("/api/chatkit/session", { method: "POST" })
         if (!res.ok) {
           const errorText = await res.text()
-          console.error("ChatKit session failed:", res.status, errorText)
+          console.error("ChatKit session failed", errorText)
           throw new Error("Failed to create ChatKit session")
         }
 
@@ -29,18 +28,4 @@ function ChatKitRenderer() {
       <ChatKit control={control} />
     </div>
   )
-}
-
-export function LiiratChatPanel() {
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  if (!isMounted) {
-    return <div className="w-full h-full" />
-  }
-
-  return <ChatKitRenderer />
 }
