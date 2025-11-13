@@ -253,7 +253,7 @@ export default function PriceBoard() {
     if (typeof window === "undefined") return
 
     let source: EventSource | null = null
-    let retryTimer: ReturnType<typeof setTimeout> | null = null
+    let retryTimer: number | null = null
     let cancelled = false
 
     const connect = () => {
@@ -290,7 +290,7 @@ export default function PriceBoard() {
 
     return () => {
       cancelled = true
-      if (retryTimer) {
+      if (retryTimer !== null) {
         window.clearTimeout(retryTimer)
       }
       source?.close()

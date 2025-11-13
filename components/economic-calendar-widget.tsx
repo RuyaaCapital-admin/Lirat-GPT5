@@ -138,8 +138,6 @@ function EconomicCalendarWidgetComponent() {
 
       const target = root.querySelector<HTMLElement>("#economicCalendarWidget")
       if (!target) return
-      target.style.pointerEvents = "none"
-      target.setAttribute("aria-hidden", "true")
 
       const loader = document.createElement("script")
       loader.type = "text/javascript"
@@ -151,9 +149,8 @@ function EconomicCalendarWidgetComponent() {
         const start = performance.now()
         const waitForIframe = () => {
           if (cancelled) return
-          const iframe = target.querySelector<HTMLIFrameElement>("iframe")
+            const iframe = target.querySelector<HTMLIFrameElement>("iframe")
           if (iframe) {
-            iframe.style.pointerEvents = "none"
             iframe.setAttribute("tabindex", "-1")
             iframe.setAttribute(
               "title",
@@ -269,15 +266,15 @@ function EconomicCalendarWidgetComponent() {
         </div>
       )}
 
-      <div className="calendar-inner" data-ready={isReady}>
-        <div ref={containerRef} className="calendar-inner__host" />
-        <div className="calendar-inner__mask" aria-hidden="true" />
-        <div className="calendar-inner__shield" aria-hidden="true">
-          <span className="calendar-inner__shield-label" aria-hidden="true">
-            {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
-          </span>
+        <div className="calendar-inner" data-ready={isReady}>
+          <div ref={containerRef} className="calendar-inner__host" />
+          <div className="calendar-inner__mask" aria-hidden="true" />
+          <div className="calendar-inner__footer" aria-hidden="true">
+            <span className="calendar-inner__footer-label">
+              {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
+            </span>
+          </div>
         </div>
-      </div>
 
       <div className="bottom-blocker" aria-hidden="true">
         <button
@@ -546,7 +543,7 @@ function EconomicCalendarWidgetComponent() {
           height: 100%;
           min-height: inherit;
           box-sizing: border-box;
-          pointer-events: none;
+          pointer-events: auto;
           isolation: isolate;
           z-index: 1;
         }
@@ -569,7 +566,6 @@ function EconomicCalendarWidgetComponent() {
           box-sizing: border-box !important;
           border-radius: 24px !important;
           overflow: hidden !important;
-          pointer-events: none !important;
           background: transparent !important;
           transition: filter 0.35s ease;
         }
@@ -598,26 +594,43 @@ function EconomicCalendarWidgetComponent() {
           mix-blend-mode: normal;
         }
 
-        .calendar-inner__shield {
+        .calendar-inner__footer {
           position: absolute;
-          inset: 0;
+          inset-inline: 0;
+          bottom: 0;
+          height: 90px;
           z-index: 4;
           pointer-events: auto;
-          background: transparent;
-        }
-
-        .calendar-inner__shield:hover {
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
           cursor: not-allowed;
+          background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.95) 0%,
+            rgba(255, 255, 255, 0.88) 55%,
+            rgba(255, 255, 255, 0.48) 85%,
+            rgba(255, 255, 255, 0) 100%
+          );
         }
 
-        .calendar-inner__shield-label {
-          position: absolute;
-          top: 16px;
-          inset-inline-end: 18px;
-          padding: 4px 11px;
+        [data-theme="dark"] .calendar-inner__footer,
+        .dark .calendar-inner__footer {
+          background: linear-gradient(
+            to top,
+            rgba(8, 15, 13, 0.95) 0%,
+            rgba(10, 18, 15, 0.85) 55%,
+            rgba(10, 18, 15, 0.45) 85%,
+            rgba(10, 18, 15, 0) 100%
+          );
+        }
+
+        .calendar-inner__footer-label {
+          margin-bottom: 14px;
           border-radius: 999px;
-          background: rgba(8, 20, 14, 0.72);
-          border: 1px solid rgba(117, 204, 158, 0.35);
+          padding: 6px 16px;
+          background: rgba(10, 22, 15, 0.72);
+          border: 1px solid rgba(117, 204, 158, 0.28);
           color: rgba(214, 244, 226, 0.88);
           font-size: 0.62rem;
           letter-spacing: 0.28em;
@@ -625,17 +638,17 @@ function EconomicCalendarWidgetComponent() {
           pointer-events: none;
           backdrop-filter: blur(6px);
           opacity: 0;
-          transform: translateY(-6px);
+          transform: translateY(8px);
           transition: opacity 0.3s ease, transform 0.3s ease;
         }
 
-        [data-theme="dark"] .calendar-inner__shield-label,
-        .dark .calendar-inner__shield-label {
-          background: rgba(4, 12, 9, 0.78);
-          border-color: rgba(117, 204, 158, 0.4);
+        [data-theme="dark"] .calendar-inner__footer-label,
+        .dark .calendar-inner__footer-label {
+          background: rgba(4, 12, 9, 0.82);
+          border-color: rgba(117, 204, 158, 0.45);
         }
 
-        .calendar-inner[data-ready="true"] .calendar-inner__shield-label {
+        .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
           opacity: 1;
           transform: translateY(0);
         }
@@ -1001,6 +1014,9 @@ function EconomicCalendarWidgetComponent() {
             min-height: 760px !important;
             height: 760px !important;
           }
+          .calendar-inner__footer {
+            height: 88px;
+          }
         }
 
         @media (max-width: 768px) {
@@ -1031,6 +1047,10 @@ function EconomicCalendarWidgetComponent() {
             width: calc(100% - 36px);
             inset-inline: 18px;
           }
+
+          .calendar-inner__footer {
+            height: 82px;
+          }
         }
 
         @media (max-width: 576px) {
@@ -1060,6 +1080,10 @@ function EconomicCalendarWidgetComponent() {
             bottom: 110px;
             max-height: 400px;
           }
+
+          .calendar-inner__footer {
+            height: 76px;
+          }
         }
 
         @media (max-width: 430px) {
@@ -1088,6 +1112,10 @@ function EconomicCalendarWidgetComponent() {
           .calendar-inner__host iframe {
             min-height: 620px !important;
             height: 620px !important;
+          }
+
+          .calendar-inner__footer {
+            height: 70px;
           }
         }
       `}</style>

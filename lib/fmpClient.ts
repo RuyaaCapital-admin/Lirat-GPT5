@@ -61,14 +61,26 @@ const FX_PAIRS: FxPair[] = [
   { base: "USD", quote: "SYP", decimals: 0, optional: true },
 ]
 
-const STREAM_SYMBOL_MAP: Record<
-  string,
-  {
-    path: "fx" | "gold" | "syp"
-    key: keyof RatesPayload["fx"] | keyof RatesPayload["gold"] | "USD_SYP"
-    invert?: boolean
-  }
-> = {
+type StreamMapping =
+  | {
+      path: "fx"
+      key: FxNumericKey
+      invert?: boolean
+    }
+  | {
+      path: "syp"
+      key: "USD_SYP"
+      invert?: boolean
+    }
+  | {
+      path: "gold"
+      key: keyof RatesPayload["gold"]
+      invert?: boolean
+    }
+
+type FxNumericKey = Exclude<keyof RatesPayload["fx"], "SYP">
+
+const STREAM_SYMBOL_MAP: Record<string, StreamMapping> = {
   USDTRY: { path: "fx", key: "USD_TRY" },
   EURTRY: { path: "fx", key: "EUR_TRY" },
   GBPTRY: { path: "fx", key: "GBP_TRY" },
@@ -325,23 +337,29 @@ class FmpRatesManager extends EventEmitter {
     const fx: RatesPayload["fx"] = structuredClone(DEFAULT_PAYLOAD.fx)
 
     for (const { pair, value } of results) {
-      const key = `${pair.base}_${pair.quote}` as keyof RatesPayload["fx"]
+      const rawKey = `${pair.base}_${pair.quote}`
       if (pair.base === "USD" && pair.quote === "SYP") {
         fx.SYP.USD_SYP = value !== null ? Math.round(value) : null
-      } else if (key in fx) {
-        fx[key] = value !== null ? Number(value.toFixed(pair.decimals)) : null
-        } else {
-          const legacyKey = `${pair.base}${pair.quote}`.toUpperCase()
-          if (legacyKey in STREAM_SYMBOL_MAP) {
-            const mapping = STREAM_SYMBOL_MAP[legacyKey]
-            if (mapping.path === "syp") {
-              fx.SYP.USD_SYP = value !== null ? Math.round(mapping.invert ? (value !== 0 ? 1 / value : 0) : value) : null
-            } else if (mapping.path === "fx" && typeof mapping.key === "string" && mapping.key in fx) {
-              const keyName = mapping.key as keyof RatesPayload["fx"]
-              fx[keyName] = value !== null ? Number(value.toFixed(pair.decimals)) : null
-            }
-          }
-        }
+        continue
+      }
+
+      if (rawKey !== "SYP" && rawKey in fx) {
+        const numericKey = rawKey as FxNumericKey
+        fx[numericKey] = value !== null ? Number(value.toFixed(pair.decimals)) : null
+        continue
+      }
+
+      const legacyKey = `${pair.base}${pair.quote}`.toUpperCase()
+      const mapping = STREAM_SYMBOL_MAP[legacyKey]
+      if (!mapping) continue
+
+      if (mapping.path === "syp") {
+        fx.SYP.USD_SYP =
+          value !== null ? Math.round(mapping.invert ? (value !== 0 ? 1 / value : 0) : value) : null
+      } else if (mapping.path === "fx") {
+        const decimals = FX_PAIRS.find((item) => `${item.base}_${item.quote}` === mapping.key)?.decimals
+        fx[mapping.key] = value !== null ? Number(value.toFixed(decimals ?? pair.decimals)) : null
+      }
     }
 
     const usdtry = fx.USD_TRY
@@ -442,39 +460,36 @@ class FmpRatesManager extends EventEmitter {
         return
       }
 
-      const mapping = STREAM_SYMBOL_MAP[symbolRaw]
-      if (!mapping) {
-        return
-      }
+        const mapping = STREAM_SYMBOL_MAP[symbolRaw]
+        if (!mapping) {
+          return
+        }
 
-      const snapshot = this.snapshot ?? {
-        payload: structuredClone(DEFAULT_PAYLOAD),
-        fetchedAt: Date.now(),
-        source: "ws" as const,
-      }
+        const snapshot = this.snapshot ?? {
+          payload: structuredClone(DEFAULT_PAYLOAD),
+          fetchedAt: Date.now(),
+          source: "ws" as const,
+        }
 
         const payload = structuredClone(snapshot.payload)
 
         if (mapping.path === "syp") {
           payload.fx.SYP.USD_SYP = mapping.invert ? (price !== 0 ? Math.round(1 / price) : null) : Math.round(price)
         } else if (mapping.path === "fx") {
-          const key = mapping.key as keyof typeof payload.fx
-          const decimals = FX_PAIRS.find(
-            (pair) => `${pair.base}_${pair.quote}` === (mapping.key as string),
-          )?.decimals
-          payload.fx[key] = decimals !== undefined ? Number(price.toFixed(decimals)) : Number(price)
-        } else if (mapping.path === "gold") {
-          payload.gold.ounceUSD = Number(price.toFixed(2))
+          const decimals = FX_PAIRS.find((pair) => `${pair.base}_${pair.quote}` === mapping.key)?.decimals
+          payload.fx[mapping.key] = decimals !== undefined ? Number(price.toFixed(decimals)) : Number(price)
+        } else {
+          payload.gold[mapping.key] = Number(price.toFixed(2))
         }
 
-      if (payload.gold.ounceUSD && payload.fx.USD_TRY) {
-        const gram24 = Number(((payload.gold.ounceUSD * payload.fx.USD_TRY) / 31.1035).toFixed(0))
-        const derived = deriveGoldFromGram(gram24)
-        payload.gold = {
-          ...payload.gold,
-          ...derived,
+        if (payload.gold.ounceUSD && payload.fx.USD_TRY) {
+          const gram24 = Number(((payload.gold.ounceUSD * payload.fx.USD_TRY) / 31.1035).toFixed(0))
+          const derived = deriveGoldFromGram(gram24)
+          payload.gold = {
+            ...payload.gold,
+            ...derived,
+          }
         }
-      }
 
       this.lastWsAt = Date.now()
       this.snapshot = {

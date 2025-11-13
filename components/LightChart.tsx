@@ -1,15 +1,7 @@
 "use client"
 
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react"
-import { createChart, CrosshairMode, LineStyle, type CandlestickData, type IChartApi, type ISeriesApi, type UTCTimestamp } from "lightweight-charts"
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { createChart, CrosshairMode, LineStyle, type CandlestickData, type ISeriesApi, type UTCTimestamp } from "lightweight-charts"
 import { useTheme } from "next-themes"
 import { useLocale } from "@/hooks/use-locale"
 import {
@@ -87,7 +79,7 @@ type PriceLineCollections = {
 export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
   ({ symbol, onSymbolChange, timeframe, onTimeframeChange }, ref) => {
     const containerRef = useRef<HTMLDivElement | null>(null)
-    const chartRef = useRef<IChartApi | null>(null)
+    const chartRef = useRef<ReturnType<typeof createChart> | null>(null)
     const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null)
     const resizeObserverRef = useRef<ResizeObserver | null>(null)
     const candlesRef = useRef<CandlestickData[]>([])
@@ -111,7 +103,7 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
     durationRef.current = timeframeConfig.durationMs
 
     const applyThemeToChart = useCallback(
-      (chart: IChartApi, series: ISeriesApi<"Candlestick">) => {
+      (chart: ReturnType<typeof createChart>, series: ISeriesApi<"Candlestick">) => {
         const dark = resolvedTheme === "dark"
 
         chart.applyOptions({
@@ -214,9 +206,9 @@ export const LightChart = forwardRef<LightChartHandle, LightChartProps>(
         width: container.clientWidth,
         height: container.clientHeight,
         autoSize: true,
-      })
+      }) as ReturnType<typeof createChart>
 
-      const series = chart.addCandlestickSeries()
+      const series = (chart as any).addCandlestickSeries() as ISeriesApi<"Candlestick">
 
       chartRef.current = chart
       seriesRef.current = series
