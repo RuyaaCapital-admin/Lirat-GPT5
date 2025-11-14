@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/auth-context'
 import { Button } from '@/components/ui/button'
@@ -16,8 +16,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const { signIn, signInWithGoogle } = useAuth()
+  const { signIn, signInWithGoogle, user, loading: authLoading } = useAuth()
   const router = useRouter()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/ai')
+      router.refresh()
+    }
+  }, [user, authLoading, router])
+
+  // Check for error in URL params
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const errorParam = params.get('error')
+    if (errorParam) {
+      setError(decodeURIComponent(errorParam))
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

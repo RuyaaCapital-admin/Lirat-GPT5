@@ -36,10 +36,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Auth Context] Auth state changed:', event, session?.user?.email)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      
+      // Handle successful sign in
+      if (event === 'SIGNED_IN' && session) {
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          // Check if we're on the callback page, if so, let it handle redirect
+          if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/callback')) {
+            // If user is signed in and not on callback, ensure they're not on login/signup
+            if (window.location.pathname.includes('/auth/login') || window.location.pathname.includes('/auth/signup')) {
+              router.push('/ai')
+            }
+          }
+        }, 100)
+      }
     })
 
     return () => subscription.unsubscribe()
