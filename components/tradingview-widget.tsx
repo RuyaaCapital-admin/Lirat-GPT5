@@ -19,7 +19,7 @@ function TradingViewWidget() {
     script.type = "text/javascript"
     script.async = true
     script.innerHTML = JSON.stringify({
-      colorTheme: isDark ? "dark" : "light",
+      colorTheme: "light", // Always use light theme, we'll adjust with CSS for dark mode
       isTransparent: false,
       locale: "en",
       currencies: ["EUR", "USD", "GBP", "TRY", "CNY", "JPY"],
@@ -44,12 +44,14 @@ function TradingViewWidget() {
       <style jsx global>{`
         .tradingview-widget-container {
           position: relative;
+          overflow: hidden;
         }
         .tradingview-widget-container__widget {
           position: relative;
           z-index: 1;
         }
-        .tradingview-widget-copyright {
+        .tradingview-widget-copyright,
+        .tradingview-widget-copyright * {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
@@ -59,9 +61,13 @@ function TradingViewWidget() {
           height: 0 !important;
           width: 0 !important;
           overflow: hidden !important;
+          font-size: 0 !important;
+          line-height: 0 !important;
         }
         .tradingview-widget-container a,
-        .tradingview-widget-container a * {
+        .tradingview-widget-container a *,
+        .tradingview-widget-container [href],
+        .tradingview-widget-container [href] * {
           pointer-events: none !important;
           cursor: default !important;
           user-select: none !important;
@@ -73,12 +79,36 @@ function TradingViewWidget() {
         /* Hide any TradingView branding or links that might appear */
         .tradingview-widget-container [href*="tradingview.com"],
         .tradingview-widget-container [class*="copyright"],
-        .tradingview-widget-container [class*="trademark"] {
+        .tradingview-widget-container [class*="trademark"],
+        .tradingview-widget-container [class*="TradingView"],
+        .tradingview-widget-container [id*="tradingview"],
+        .tradingview-widget-container [id*="copyright"] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
           pointer-events: none !important;
+          height: 0 !important;
+          width: 0 !important;
+          overflow: hidden !important;
         }
+        /* Mask bottom corners where links might appear */
+        .tradingview-widget-container::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 40px;
+          background: ${isDark ? "rgba(15, 23, 42, 1)" : "rgba(255, 255, 255, 1)"};
+          z-index: 10;
+          pointer-events: none;
+        }
+        /* Dark mode color adjustment */
+        ${isDark ? `
+          .tradingview-widget-container iframe {
+            filter: brightness(0.85) contrast(1.1);
+          }
+        ` : ""}
       `}</style>
       <div className="tradingview-widget-container" ref={container}>
         <div className="tradingview-widget-container__widget"></div>

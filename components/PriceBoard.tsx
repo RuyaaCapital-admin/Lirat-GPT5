@@ -592,27 +592,10 @@ export default function PriceBoard() {
               </div>
               <div className="space-y-0.5">
                 <ModernPanelTitle className="text-base">{copy.heading}</ModernPanelTitle>
-                <p className={cn(
-                  "text-xs",
-                  isDark ? "text-slate-400" : "text-slate-600"
-                )}>{copy.subheading}</p>
               </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              <LiveStatusPill status={liveStatus} liveMeta={resolvedData?.meta} copy={copy} isDark={isDark} />
-              <div className={cn(
-                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
-                isDark
-                  ? "border-slate-700 bg-slate-800/50 text-slate-300"
-                  : "border-slate-200 bg-slate-50 text-slate-600"
-              )}>
-                <Clock3 className={cn("h-3 w-3", isDark ? "text-slate-400" : "text-slate-500")} />
-                <span>
-                  {copy.updated}:{" "}
-                  {resolvedData ? formatRelativeTime(resolvedData.meta.fetchedAt, locale) : copy.waiting}
-                </span>
-              </div>
               {resolvedData?.meta.stale && typeof staleSeconds === "number" && (
                 <Badge
                   variant="outline"

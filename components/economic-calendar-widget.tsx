@@ -245,10 +245,6 @@ function EconomicCalendarWidgetComponent() {
   return (
     <div className="calendar-wrapper" dir={language === "ar" ? "rtl" : "ltr"} data-ready={isReady}>
       <div className="calendar-controls">
-        <div className="calendar-controls__status" aria-live="polite">
-          <span className="status-dot" />
-          <span>{isReady ? (language === "ar" ? "متصل بالبيانات الحية" : "Live macro feed online") : TEXT.loading[language]}</span>
-        </div>
         <div className="calendar-controls__actions">
           <button type="button" onClick={handleResetToToday} className="control-button">
             {TEXT.reset[language]}
@@ -372,36 +368,6 @@ function EconomicCalendarWidgetComponent() {
           pointer-events: none;
         }
 
-        .calendar-controls__status {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 10px 16px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.7);
-          border: 1px solid rgba(192, 214, 202, 0.6);
-          box-shadow: 0 12px 40px rgba(26, 46, 31, 0.12);
-          font-size: 0.78rem;
-          font-weight: 600;
-          letter-spacing: 0.04em;
-          color: rgba(22, 46, 28, 0.75);
-          pointer-events: auto;
-        }
-
-        [data-theme="dark"] .calendar-controls__status,
-        .dark .calendar-controls__status {
-          background: rgba(15, 24, 20, 0.8);
-          border-color: rgba(70, 120, 86, 0.4);
-          color: rgba(200, 240, 220, 0.82);
-        }
-
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: rgba(57, 179, 107, 0.9);
-          box-shadow: 0 0 12px rgba(57, 179, 107, 0.6);
-        }
 
         .calendar-controls__actions {
           display: flex;
@@ -653,23 +619,67 @@ function EconomicCalendarWidgetComponent() {
           transform: translateY(0);
         }
 
+        /* Mask all branding, links, and copyright */
         .calendar-wrapper [class*="copyright"],
         .calendar-wrapper [class*="brand"],
         .calendar-wrapper [class*="logo"],
         .calendar-wrapper [class*="footer"],
+        .calendar-wrapper [class*="trademark"],
         .calendar-wrapper [href*="mql5"],
-        .calendar-wrapper [href*="tradays"] {
+        .calendar-wrapper [href*="tradays"],
+        .calendar-wrapper [id*="copyright"],
+        .calendar-wrapper [id*="brand"],
+        .calendar-wrapper a[href*="mql5.com"],
+        .calendar-wrapper a[href*="tradays.com"],
+        .calendar-wrapper a[href*="calendar.widget"] {
           display: none !important;
           visibility: hidden !important;
           opacity: 0 !important;
-        }
-
-        .calendar-wrapper a[href*="mql5.com"],
-        .calendar-wrapper a[href*="calendar.widget"] {
-          display: none !important;
           position: absolute !important;
           left: -9999px !important;
           pointer-events: none !important;
+          height: 0 !important;
+          width: 0 !important;
+          overflow: hidden !important;
+          font-size: 0 !important;
+          line-height: 0 !important;
+        }
+        
+        /* Disable all links in calendar iframe area */
+        .calendar-inner__host a,
+        .calendar-inner__host a *,
+        .calendar-inner__host [href],
+        .calendar-inner__host [href] * {
+          pointer-events: none !important;
+          cursor: default !important;
+        }
+        
+        /* Mask bottom corners where links might appear */
+        .calendar-inner__host::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 50px;
+          background: linear-gradient(
+            to top,
+            rgba(255, 255, 255, 0.98) 0%,
+            rgba(255, 255, 255, 0.85) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          z-index: 20;
+          pointer-events: none;
+        }
+        
+        [data-theme="dark"] .calendar-inner__host::after,
+        .dark .calendar-inner__host::after {
+          background: linear-gradient(
+            to top,
+            rgba(12, 22, 18, 0.98) 0%,
+            rgba(12, 22, 18, 0.85) 50%,
+            rgba(12, 22, 18, 0) 100%
+          );
         }
 
         .calendar-wrapper,

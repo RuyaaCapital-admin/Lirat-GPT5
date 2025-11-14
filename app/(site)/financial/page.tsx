@@ -93,25 +93,16 @@ export default function FinancialPage() {
 
   return (
     <div className="space-y-10" dir={locale === "ar" ? "rtl" : "ltr"}>
-      <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-2">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{getTranslation(locale, "financial")}</h1>
-          <p className="max-w-2xl text-muted-foreground">
-            {locale === "ar"
-              ? "متابعة تحريرية فورية لأهم تحركات الأسواق، البنوك المركزية، والسلع الحساسة للإقتصاد."
-              : "Real-time editorial coverage across currencies, commodities, and the macro signals moving tomorrow’s trade."}
-          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="rounded-full border border-primary/30">
             <span className="tracking-[0.3em] uppercase text-xs">
-              {locale === "ar" ? "تحديث الآن" : "Refresh now"}
+              {locale === "ar" ? "تحديث" : "Refresh"}
             </span>
           </Button>
-          <div className="flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-primary">
-            <Clock className="h-3.5 w-3.5" />
-            <span>{items.length > 0 ? formatTime(items[0].publishedDate) : "—"}</span>
-          </div>
         </div>
       </div>
 

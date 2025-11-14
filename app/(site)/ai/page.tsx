@@ -60,12 +60,19 @@ export default function AIPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col" dir={locale === "ar" ? "rtl" : "ltr"}>
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-background via-background to-primary/5" dir={locale === "ar" ? "rtl" : "ltr"}>
       {/* Header - Fixed at top */}
-      <div className="shrink-0 px-4 py-3 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-        <div className="flex flex-col space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">{getTranslation(locale, "ai")}</h1>
-          <p className="text-sm text-muted-foreground line-clamp-1">
+      <div className="shrink-0 px-4 py-4 border-b border-border/50 bg-background/95 backdrop-blur-xl supports-backdrop-filter:bg-background/80">
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="text-xl">🤖</span>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              {getTranslation(locale, "ai")}
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
             {locale === "ar"
               ? "مساعدك الذكي للتداول مع رؤى السوق والتحكم في الرسوم البيانية والمشورة المخصصة"
               : "Your intelligent trading assistant powered by advanced AI. Get market insights, control charts, and receive personalized trading advice."}
@@ -76,21 +83,23 @@ export default function AIPage() {
       {/* Main Content - Fixed layout for desktop */}
       <div className="flex-1 overflow-hidden">
         {/* Desktop: Split view with chart, quick actions, and chat */}
-        <div className="hidden lg:grid lg:grid-cols-12 h-full gap-4 p-4">
+        <div className="hidden lg:grid lg:grid-cols-12 h-full gap-6 p-6">
           {/* Left: Chart (60%) */}
-          <div className="lg:col-span-7 h-full overflow-hidden">
-            <AiChartPlaceholder />
+          <div className="lg:col-span-7 h-full overflow-hidden rounded-2xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
+            <AiChartPlaceholder symbol={symbol} />
           </div>
 
           {/* Right: Quick Actions + Chat (40%) */}
           <div className="lg:col-span-5 flex flex-col gap-4 h-full overflow-hidden">
             {/* Quick Actions - Scrollable */}
-            <div className="shrink-0 overflow-y-auto">
-              <QuickActions onActionClick={handleQuickAction} />
+            <div className="shrink-0 overflow-y-auto rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm shadow-md">
+              <div className="p-4">
+                <QuickActions onActionClick={handleQuickAction} />
+              </div>
             </div>
 
             {/* Chat - Takes remaining space */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-lg">
               <LiiratChatDesktop />
             </div>
           </div>
@@ -99,8 +108,12 @@ export default function AIPage() {
         {/* Mobile: Stacked layout */}
         <div className="lg:hidden h-full overflow-y-auto p-4 space-y-4">
           <div className="space-y-4">
-            <AiChartPlaceholder />
-            <QuickActions onActionClick={handleQuickAction} />
+            <div className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm shadow-md overflow-hidden">
+              <AiChartPlaceholder symbol={symbol} />
+            </div>
+            <div className="rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm shadow-md p-4">
+              <QuickActions onActionClick={handleQuickAction} />
+            </div>
           </div>
         </div>
       </div>

@@ -118,14 +118,12 @@ export default function Dashboard() {
             </h2>
             <p className="max-w-2xl text-sm text-muted-foreground md:text-base">
               {isArabic
-                ? "كل الإعلانات الاقتصادية الهامة تُترجم مباشرة وتُعرض في مخطط واحد سريع الاستجابة للغة الواجهة."
-                : "Every market-moving announcement translated on the fly and arranged in a single, responsive timeline."}
+                ? "تتبع الأحداث الاقتصادية الهامة في الوقت الفعلي"
+                : "Track important economic events in real-time"}
             </p>
           </div>
         </div>
-        <div className="rounded-[30px] border border-white/60 bg-white/90 p-3 shadow-inner backdrop-blur dark:border-white/10 dark:bg-background/80">
-          <EconomicCalendarWidget />
-        </div>
+        <EconomicCalendarWidget />
       </section>
 
       {/* Market + News */}
