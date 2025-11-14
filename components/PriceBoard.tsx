@@ -213,8 +213,6 @@ export default function PriceBoard() {
   const { theme, resolvedTheme } = useTheme()
   const isRTL = locale === "ar"
   const isDark = resolvedTheme === "dark" || theme === "dark"
-  const [showTradingView, setShowTradingView] = useState(false)
-
   const copy = useMemo<Copy>(
     () => ({
       heading: isRTL ? "لوحة أسعار ليرات" : "Liirat Price Board",
@@ -545,26 +543,7 @@ export default function PriceBoard() {
       : null
 
   const showErrorInline = Boolean(error && !resolvedData)
-  
-  // Check if rates are displaying properly - if not, show TradingView widget
-  useEffect(() => {
-    if (!resolvedData || isLoading) return
-    
-    // Check if we have valid rate data
-    const hasValidRates = 
-      resolvedData.fx && 
-      (resolvedData.fx.USD_TRY || resolvedData.fx.EUR_TRY || resolvedData.fx.GBP_TRY)
-    
-    // If no valid rates after 5 seconds, show TradingView
-    if (!hasValidRates && !showTradingView) {
-      const timer = setTimeout(() => {
-        setShowTradingView(true)
-      }, 5000)
-      return () => clearTimeout(timer)
-    } else if (hasValidRates) {
-      setShowTradingView(false)
-    }
-  }, [resolvedData, isLoading, showTradingView])
+  const hasValidRates = rows.some((row) => typeof row.value === "number" && row.value !== null)
 
   return (
     <section
@@ -575,19 +554,21 @@ export default function PriceBoard() {
         className={cn(
           "mx-auto w-full max-w-3xl border shadow-lg",
           isDark
-            ? "border-slate-800/60 bg-slate-900/80"
-            : "border-slate-200/70 bg-white/95"
+            ? "border-emerald-500/25 bg-[#0b1611]/95"
+            : "border-emerald-100/70 bg-white/95"
         )}
       >
         <ModernPanelHeader className="pb-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <div className={cn(
-                "relative h-8 w-8 overflow-hidden rounded-lg border",
-                isDark
-                  ? "border-slate-700 bg-slate-800"
-                  : "border-slate-200 bg-slate-50"
-              )}>
+              <div
+                className={cn(
+                  "relative h-8 w-8 overflow-hidden rounded-lg border",
+                  isDark
+                    ? "border-emerald-500/40 bg-[#0f2218]"
+                    : "border-emerald-100 bg-emerald-50/80"
+                )}
+              >
                 <Image src="/images/liirat-logo.png" alt="Liirat logo" fill className="object-contain p-1.5" priority />
               </div>
               <div className="space-y-0.5">
@@ -623,7 +604,7 @@ export default function PriceBoard() {
             <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} isDark={isDark} />
           )}
 
-          {showTradingView ? (
+          {!hasValidRates ? (
             <div className="w-full">
               <TradingViewWidget />
             </div>
@@ -677,21 +658,27 @@ function RatesCard({
   isDark: boolean
 }) {
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-lg border p-3",
-      isDark
-        ? "border-slate-800 bg-slate-900/50"
-        : "border-slate-200 bg-slate-50/50"
-    )}>
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-lg border p-3",
+        isDark
+          ? "border-emerald-500/25 bg-[#0d1a13]"
+          : "border-emerald-100 bg-[#f4f8f3]"
+      )}
+    >
       <div className="relative mb-2 flex items-center gap-2">
         <span className={cn(
           "inline-flex h-1.5 w-1.5 rounded-full",
           isDark ? "bg-emerald-400" : "bg-emerald-500"
         )} />
-        <h3 className={cn(
-          "text-xs font-semibold uppercase tracking-wide",
-          isDark ? "text-slate-200" : "text-slate-700"
-        )}>{title}</h3>
+        <h3
+          className={cn(
+            "text-xs font-semibold uppercase tracking-wide",
+            isDark ? "text-emerald-50" : "text-emerald-900"
+          )}
+        >
+          {title}
+        </h3>
       </div>
       <div className="relative flex flex-col gap-2">
         {rows.map((row) => (
@@ -706,37 +693,51 @@ function RateRowItem({ row, locale, isLoading, isDark }: { row: RateRow; locale:
   const formatted = formatNumber(row.value, locale, row.decimals)
 
   return (
-    <div className={cn(
-      "flex items-center justify-between rounded-lg border px-2.5 py-2 transition",
-      isDark
-        ? "border-slate-800 bg-slate-800/30 hover:border-slate-700"
-        : "border-slate-200 bg-white/50 hover:border-slate-300"
-    )}>
+    <div
+      className={cn(
+        "flex items-center justify-between rounded-lg border px-2.5 py-2 transition",
+        isDark
+          ? "border-emerald-500/25 bg-[#0f1f16]/70 hover:border-emerald-400/30"
+          : "border-emerald-100 bg-white/70 hover:border-emerald-200/70"
+      )}
+    >
       <div className="flex items-center gap-2.5">
-        <div className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full border",
-          isDark
-            ? "border-slate-700 bg-slate-800"
-            : "border-slate-200 bg-slate-100"
-        )}>
+        <div
+          className={cn(
+            "flex h-7 w-7 items-center justify-center rounded-full border",
+            isDark
+              ? "border-emerald-500/40 bg-[#122218]"
+              : "border-emerald-100 bg-emerald-50/80"
+          )}
+        >
           {row.icon ?? getFlag(row.flagCode)}
         </div>
         <div className="flex flex-col">
-          <span className={cn(
-            "text-xs font-semibold",
-            isDark ? "text-slate-200" : "text-slate-700"
-          )}>{row.label}</span>
-          <span className={cn(
-            "text-[10px] uppercase tracking-wide",
-            isDark ? "text-slate-400" : "text-slate-500"
-          )}>
+          <span
+            className={cn(
+              "text-xs font-semibold",
+              isDark ? "text-emerald-50" : "text-emerald-900"
+            )}
+          >
+            {row.label}
+          </span>
+          <span
+            className={cn(
+              "text-[10px] uppercase tracking-wide",
+              isDark ? "text-emerald-200" : "text-emerald-600"
+            )}
+          >
             {row.code ?? row.unit}
           </span>
           {row.code && (
-            <span className={cn(
-              "text-[10px]",
-              isDark ? "text-slate-500" : "text-slate-600"
-            )}>{row.unit}</span>
+            <span
+              className={cn(
+                "text-[10px]",
+                isDark ? "text-emerald-300/70" : "text-emerald-700/80"
+              )}
+            >
+              {row.unit}
+            </span>
           )}
         </div>
       </div>
@@ -744,14 +745,18 @@ function RateRowItem({ row, locale, isLoading, isDark }: { row: RateRow; locale:
       <div className="flex items-baseline gap-1.5">
         {isLoading ? (
           <div className="flex items-center gap-2">
-            <div className={cn(
-              "h-3 w-12 animate-pulse rounded-full",
-              isDark ? "bg-slate-700" : "bg-slate-200"
-            )} />
-            <div className={cn(
-              "h-3 w-6 animate-pulse rounded-full",
-              isDark ? "bg-slate-700" : "bg-slate-200"
-            )} />
+            <div
+              className={cn(
+                "h-3 w-12 animate-pulse rounded-full",
+                isDark ? "bg-[#16281e]" : "bg-emerald-100"
+              )}
+            />
+            <div
+              className={cn(
+                "h-3 w-6 animate-pulse rounded-full",
+                isDark ? "bg-[#16281e]" : "bg-emerald-100"
+              )}
+            />
           </div>
         ) : (
           <>
@@ -759,16 +764,20 @@ function RateRowItem({ row, locale, isLoading, isDark }: { row: RateRow; locale:
             <span
               className={cn(
                 "text-sm font-semibold tracking-tight",
-                isDark ? "text-slate-100" : "text-slate-900"
+                isDark ? "text-emerald-50" : "text-emerald-900"
               )}
               aria-live="polite"
             >
               {formatted}
             </span>
-            <span className={cn(
-              "text-[10px] font-semibold uppercase tracking-wide",
-              isDark ? "text-slate-400" : "text-slate-600"
-            )}>{row.suffix}</span>
+            <span
+              className={cn(
+                "text-[10px] font-semibold uppercase tracking-wide",
+                isDark ? "text-emerald-300" : "text-emerald-700"
+              )}
+            >
+              {row.suffix}
+            </span>
           </>
         )}
       </div>
@@ -783,7 +792,7 @@ function TrendIcon({ trend, isDark }: { trend: Trend; isDark: boolean }) {
   if (trend === "down") {
     return <ArrowDownRight className={cn("h-3.5 w-3.5", isDark ? "text-rose-400" : "text-rose-600")} />
   }
-  return <Minus className={cn("h-3.5 w-3.5", isDark ? "text-slate-500" : "text-slate-400")} />
+  return <Minus className={cn("h-3.5 w-3.5", isDark ? "text-emerald-300/80" : "text-emerald-500/70")} />
 }
 
 function LiveStatusPill({ status, liveMeta, copy, isDark }: { status: LiveStatus; liveMeta?: RatesApiResponse["meta"]; copy: Copy; isDark: boolean }) {
@@ -817,8 +826,8 @@ function LiveStatusPill({ status, liveMeta, copy, isDark }: { status: LiveStatus
               ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
               : "border-amber-400/40 bg-amber-50 text-amber-700"
             : isDark
-              ? "border-slate-700 bg-slate-800/50 text-slate-300"
-              : "border-slate-200 bg-slate-50 text-slate-600",
+              ? "border-emerald-500/20 bg-[#121f17]/70 text-emerald-200"
+              : "border-emerald-100 bg-emerald-50 text-emerald-700",
       )}
     >
       <Wifi className={cn(
@@ -826,8 +835,12 @@ function LiveStatusPill({ status, liveMeta, copy, isDark }: { status: LiveStatus
         isLive
           ? isDark ? "text-emerald-400" : "text-emerald-600"
           : status === "error"
-            ? isDark ? "text-amber-400" : "text-amber-600"
-            : isDark ? "text-slate-400" : "text-slate-500"
+            ? isDark
+              ? "text-amber-400"
+              : "text-amber-600"
+            : isDark
+              ? "text-emerald-200"
+              : "text-emerald-600/70"
       )} />
       <span>{label}</span>
       {isLive && (
@@ -904,19 +917,25 @@ function InlineError({ message, onRetry, copy, subtle = false, isDark }: { messa
 
 function Chip({ label, value, isDark }: { label: string; value: string; isDark: boolean }) {
   return (
-    <div className={cn(
-      "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold",
-      isDark
-        ? "border-slate-700 bg-slate-800/50 text-slate-200"
-        : "border-slate-200 bg-slate-50 text-slate-700"
-    )}>
-      <span>{label}</span>
-      <span className={cn(
-        "rounded-full px-2 py-0.5",
+    <div
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold",
         isDark
-          ? "bg-slate-700 text-slate-100"
-          : "bg-slate-200 text-slate-800"
-      )}>{value}</span>
+          ? "border-emerald-500/25 bg-[#102017]/70 text-emerald-200"
+          : "border-emerald-100 bg-emerald-50 text-emerald-900"
+      )}
+    >
+      <span>{label}</span>
+      <span
+        className={cn(
+          "rounded-full px-2 py-0.5 text-[11px]",
+          isDark
+            ? "bg-[#193224] text-emerald-50"
+            : "bg-emerald-100 text-emerald-900"
+        )}
+      >
+        {value}
+      </span>
     </div>
   )
 }

@@ -30,6 +30,20 @@ CREATE TABLE IF NOT EXISTS alerts (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Notifications table
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  metadata JSONB,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read);
+
 -- Market data cache table
 CREATE TABLE IF NOT EXISTS market_data_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,6 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_chat_history_created_at ON chat_history(created_a
 -- Row Level Security (RLS) Policies
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE alerts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE market_data_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
@@ -96,6 +111,19 @@ CREATE POLICY "Users can update their own alerts"
 
 CREATE POLICY "Users can delete their own alerts"
   ON alerts FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Policy: Users manage their notifications
+CREATE POLICY "Users can view their notifications"
+  ON notifications FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their notifications"
+  ON notifications FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their notifications"
+  ON notifications FOR UPDATE
   USING (auth.uid() = user_id);
 
 -- Policy: Users can only see their own chat history

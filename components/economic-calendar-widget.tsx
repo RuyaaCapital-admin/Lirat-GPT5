@@ -519,13 +519,13 @@ function EconomicCalendarWidgetComponent() {
           position: absolute;
           inset-inline: 0;
           bottom: 0;
-          height: 110px;
+          height: 48px;
           z-index: 6;
           pointer-events: auto;
           background: linear-gradient(
             to top,
             rgba(249, 251, 247, 0.96) 0%,
-            rgba(241, 248, 243, 0.65) 55%,
+            rgba(241, 248, 243, 0.35) 60%,
             rgba(241, 248, 243, 0) 100%
           );
           cursor: default;
@@ -536,7 +536,7 @@ function EconomicCalendarWidgetComponent() {
           background: linear-gradient(
             to top,
             rgba(8, 15, 13, 0.92) 0%,
-            rgba(11, 20, 16, 0.7) 55%,
+            rgba(11, 20, 16, 0.5) 55%,
             rgba(11, 20, 16, 0) 100%
           );
         }
@@ -561,7 +561,7 @@ function EconomicCalendarWidgetComponent() {
           overflow: hidden !important;
           background: transparent !important;
           transition: filter 0.35s ease;
-          pointer-events: none !important;
+          pointer-events: auto !important;
           cursor: default !important;
         }
 
@@ -576,16 +576,16 @@ function EconomicCalendarWidgetComponent() {
           pointer-events: none;
           z-index: 3;
           background:
-            linear-gradient(0deg, rgba(249, 252, 247, 0.85) 0%, rgba(249, 252, 247, 0) 18%),
-            linear-gradient(180deg, rgba(249, 252, 247, 0) 62%, rgba(214, 234, 221, 0.8) 100%);
+            linear-gradient(0deg, rgba(249, 252, 247, 0.6) 0%, rgba(249, 252, 247, 0) 18%),
+            linear-gradient(180deg, rgba(249, 252, 247, 0) 70%, rgba(214, 234, 221, 0.7) 100%);
           mix-blend-mode: normal;
         }
 
         [data-theme="dark"] .calendar-inner__mask,
         .dark .calendar-inner__mask {
           background:
-            linear-gradient(0deg, rgba(12, 22, 18, 0.72) 0%, rgba(12, 22, 18, 0) 18%),
-            linear-gradient(180deg, rgba(12, 22, 18, 0) 58%, rgba(12, 22, 18, 0.95) 100%);
+            linear-gradient(0deg, rgba(12, 22, 18, 0.55) 0%, rgba(12, 22, 18, 0) 18%),
+            linear-gradient(180deg, rgba(12, 22, 18, 0) 70%, rgba(12, 22, 18, 0.9) 100%);
           mix-blend-mode: normal;
         }
 

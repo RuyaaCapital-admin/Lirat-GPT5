@@ -5,9 +5,9 @@ import { useTheme } from "next-themes"
 import TradingViewChart from "@/components/ai/tradingview-chart"
 import { cn } from "@/lib/utils"
 
-type ChartTimeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d"
+export type ChartTimeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d"
 
-const TIMEFRAME_OPTIONS: ChartTimeframe[] = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
+export const TIMEFRAME_OPTIONS: ChartTimeframe[] = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
 
 type ChartProps = {
   symbol: string

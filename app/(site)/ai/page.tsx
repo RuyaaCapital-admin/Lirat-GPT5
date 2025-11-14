@@ -1,36 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import dynamic from "next/dynamic"
+import { useEffect, useRef, useState } from "react"
 import { QuickActions } from "@/components/ai/quick-actions"
-import { AiChartPlaceholder } from "@/components/ai/chart-placeholder"
+import { AiChartPlaceholder, TIMEFRAME_OPTIONS, type ChartTimeframe } from "@/components/ai/chart-placeholder"
+import { AgentChat, type AgentChatHandle } from "@/components/ai/agent-chat"
+import { NotificationTray } from "@/components/notifications/notification-tray"
 import { useLocale } from "@/hooks/use-locale"
 import { getTranslation } from "@/lib/i18n"
-
-// Dynamically import ChatKit components with SSR disabled to prevent hydration errors
-const LiiratChatBubble = dynamic(
-  () => import("@/components/ai/chat-bubble").then((mod) => ({ default: mod.LiiratChatBubble })),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-)
-
-const LiiratChatDesktop = dynamic(
-  () => import("@/components/ai/chat-desktop").then((mod) => ({ default: mod.LiiratChatDesktop })),
-  {
-    ssr: false,
-    loading: () => null,
-  }
-)
-
-const CHART_TIMEFRAMES = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"] as const
-type ChartTimeframe = (typeof CHART_TIMEFRAMES)[number]
 
 export default function AIPage() {
   const { locale } = useLocale()
   const [symbol, setSymbol] = useState("AAPL")
   const [timeframe, setTimeframe] = useState<ChartTimeframe>("1h")
+  const agentRef = useRef<AgentChatHandle>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -39,7 +21,7 @@ export default function AIPage() {
     if (storedSymbol) {
       setSymbol(storedSymbol)
     }
-    if (storedTimeframe && (CHART_TIMEFRAMES as readonly string[]).includes(storedTimeframe)) {
+    if (storedTimeframe && TIMEFRAME_OPTIONS.includes(storedTimeframe as ChartTimeframe)) {
       setTimeframe(storedTimeframe as ChartTimeframe)
     }
   }, [])
@@ -55,8 +37,7 @@ export default function AIPage() {
   }, [timeframe])
 
   const handleQuickAction = (message: string) => {
-    // Quick actions can be handled by ChatKit when it's ready
-    console.log("Quick action:", message)
+    agentRef.current?.sendPrompt(message)
   }
 
   return (
@@ -89,8 +70,11 @@ export default function AIPage() {
           </div>
         </div>
 
+        <NotificationTray className="hidden lg:block" />
+
         {/* Desktop layout */}
-        <div className="hidden flex-1 lg:grid lg:grid-cols-[minmax(0,0.62fr)_minmax(0,0.38fr)] lg:gap-6">
+        <div className="hidden flex-1 lg:grid lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:gap-6">
+          <AgentChat ref={agentRef} />
           <div className="flex flex-col gap-6">
             <AiChartPlaceholder
               symbol={symbol}
@@ -106,23 +90,11 @@ export default function AIPage() {
               <QuickActions onActionClick={handleQuickAction} />
             </div>
           </div>
-
-          <div className="rounded-[36px] border border-border/50 bg-card/95 shadow-[0_32px_90px_rgba(15,23,42,0.12)] dark:border-white/10 dark:bg-[#0a140f]/95 dark:shadow-[0_36px_95px_rgba(5,10,7,0.85)]">
-            <div className="flex items-center justify-between border-b border-border/40 px-6 py-4 text-sm text-muted-foreground dark:border-white/5">
-              <div>
-                <p className="text-xs uppercase tracking-[0.4em] text-primary/80">{locale === "ar" ? "محادثة" : "Agent link"}</p>
-                <p className="text-base font-semibold text-foreground">{locale === "ar" ? "مساعد ليرات" : "Liirat AI Desk"}</p>
-              </div>
-              <span className="rounded-full border border-primary/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
-                {locale === "ar" ? "جاهز" : "Live"}
-              </span>
-            </div>
-            <LiiratChatDesktop className="bg-transparent" />
-          </div>
         </div>
 
         {/* Mobile layout */}
         <div className="flex-1 space-y-5 lg:hidden">
+          <NotificationTray />
           <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg">
             <AiChartPlaceholder
               symbol={symbol}
@@ -134,10 +106,7 @@ export default function AIPage() {
           <div className="rounded-3xl border border-border/60 bg-card/70 shadow-md p-4">
             <QuickActions onActionClick={handleQuickAction} />
           </div>
-        </div>
-
-        <div className="pt-4 lg:hidden">
-          <LiiratChatBubble />
+          <AgentChat ref={agentRef} />
         </div>
       </div>
     </div>
