@@ -39,7 +39,14 @@ function TradingViewWidget() {
   }, [isDark])
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg">
+    <div className="relative w-full overflow-hidden rounded-lg" style={{ pointerEvents: "none" }}>
+      {/* Overlay to block ALL interactions */}
+      <div 
+        className="absolute inset-0 z-50 cursor-default" 
+        style={{ pointerEvents: "auto" }}
+        onClick={(e) => e.preventDefault()}
+        onMouseDown={(e) => e.preventDefault()}
+      />
       {/* Mask TradingView links and branding */}
       <style jsx global>{`
         .tradingview-widget-container {
@@ -74,7 +81,8 @@ function TradingViewWidget() {
           text-decoration: none !important;
         }
         .tradingview-widget-container iframe {
-          pointer-events: auto !important;
+          pointer-events: none !important;
+          cursor: default !important;
         }
         /* Hide any TradingView branding or links that might appear */
         .tradingview-widget-container [href*="tradingview.com"],
@@ -103,16 +111,20 @@ function TradingViewWidget() {
           z-index: 10;
           pointer-events: none;
         }
-        /* Dark mode color adjustment */
+        /* Dark mode color adjustment - completely override TradingView's dark blue */
         ${isDark ? `
           .tradingview-widget-container iframe {
-            filter: brightness(0.85) contrast(1.1);
+            filter: brightness(0.9) contrast(1.15) invert(0.05) hue-rotate(180deg) saturate(0.8);
+            background-color: rgba(15, 23, 42, 1) !important;
+          }
+          .tradingview-widget-container {
+            background-color: rgba(15, 23, 42, 1) !important;
           }
         ` : ""}
       `}</style>
-      <div className="tradingview-widget-container" ref={container}>
-        <div className="tradingview-widget-container__widget"></div>
-        <div className="tradingview-widget-copyright">
+      <div className="tradingview-widget-container" ref={container} style={{ pointerEvents: "none" }}>
+        <div className="tradingview-widget-container__widget" style={{ pointerEvents: "none" }}></div>
+        <div className="tradingview-widget-copyright" style={{ display: "none" }}>
           <a
             href="https://www.tradingview.com/markets/currencies/"
             rel="noopener nofollow"

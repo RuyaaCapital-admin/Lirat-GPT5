@@ -645,12 +645,27 @@ function EconomicCalendarWidgetComponent() {
           line-height: 0 !important;
         }
         
-        /* Disable all links in calendar iframe area */
+        /* Disable all links in calendar iframe area - COMPLETELY DISABLE CLICKING */
+        .calendar-inner__host,
+        .calendar-inner__host *,
         .calendar-inner__host a,
         .calendar-inner__host a *,
         .calendar-inner__host [href],
-        .calendar-inner__host [href] * {
+        .calendar-inner__host [href] *,
+        .calendar-inner__host iframe,
+        .calendar-inner__host iframe * {
           pointer-events: none !important;
+          cursor: default !important;
+          user-select: none !important;
+        }
+        
+        /* Overlay to block all interactions */
+        .calendar-inner__host::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          z-index: 30;
+          pointer-events: auto !important;
           cursor: default !important;
         }
         

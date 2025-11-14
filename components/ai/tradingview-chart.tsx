@@ -44,7 +44,14 @@ function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
   }, [isDark, symbol])
 
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg">
+    <div className="relative w-full h-full overflow-hidden rounded-lg" style={{ pointerEvents: "none" }}>
+      {/* Overlay to block ALL interactions */}
+      <div 
+        className="absolute inset-0 z-50 cursor-default" 
+        style={{ pointerEvents: "auto" }}
+        onClick={(e) => e.preventDefault()}
+        onMouseDown={(e) => e.preventDefault()}
+      />
       {/* Mask TradingView links and branding */}
       <style jsx global>{`
         .tradingview-widget-container__chart {
@@ -64,7 +71,8 @@ function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
           overflow: hidden !important;
         }
         .tradingview-widget-container__chart iframe {
-          pointer-events: auto !important;
+          pointer-events: none !important;
+          cursor: default !important;
         }
         /* Mask bottom corners */
         .tradingview-widget-container__chart::after {
@@ -78,10 +86,14 @@ function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
           z-index: 10;
           pointer-events: none;
         }
-        /* Dark mode adjustment */
+        /* Dark mode adjustment - completely override TradingView's dark blue */
         ${isDark ? `
           .tradingview-widget-container__chart iframe {
-            filter: brightness(0.85) contrast(1.1);
+            filter: brightness(0.9) contrast(1.15) invert(0.05) hue-rotate(180deg) saturate(0.8);
+            background-color: rgba(15, 23, 42, 1) !important;
+          }
+          .tradingview-widget-container__chart {
+            background-color: rgba(15, 23, 42, 1) !important;
           }
         ` : ""}
       `}</style>
