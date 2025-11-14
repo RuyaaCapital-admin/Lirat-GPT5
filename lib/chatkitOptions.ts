@@ -1,8 +1,8 @@
 export const chatkitOptions = {
   theme: {
-    colorScheme: "dark",
-    radius: "pill",
-    density: "compact",
+    colorScheme: "dark" as const,
+    radius: "pill" as const,
+    density: "compact" as const,
     typography: {
       fontFamily: "system-ui, -apple-system, sans-serif",
     },
@@ -21,5 +21,5 @@ export const chatkitOptions = {
       { label: "Explain technical indicators", prompt: "Explain technical indicators" },
     ],
   },
-}
+} as const
 
