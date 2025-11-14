@@ -73,7 +73,7 @@ export default function AIPage() {
           <NotificationTray className="hidden lg:block" />
 
           <div className="flex flex-1 flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,0.44fr)_minmax(0,0.56fr)] lg:gap-6">
-            <AgentChat ref={agentRef} className="order-2 min-h-[520px] lg:order-1" />
+            <AgentChat ref={agentRef} className="order-2 flex-1 min-h-[520px] lg:order-1" />
             <div className="order-1 flex flex-col gap-5 lg:order-2">
               <NotificationTray className="lg:hidden" />
               <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg">

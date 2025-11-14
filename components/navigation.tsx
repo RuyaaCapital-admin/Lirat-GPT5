@@ -140,7 +140,13 @@ export function Navigation() {
                         <p className="text-xs text-muted-foreground">Signed in</p>
                       </div>
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/profile" className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => signOut()}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Sign out
