@@ -19,7 +19,7 @@ export const chatkitOptions = {
       { label: "What's the outlook for gold?", prompt: "What's the outlook for gold?" },
       { label: "Help me understand risk management", prompt: "Help me understand risk management" },
       { label: "Explain technical indicators", prompt: "Explain technical indicators" },
-    ],
+    ] as Array<{ label: string; prompt: string }>,
   },
-} as const
+}
 
