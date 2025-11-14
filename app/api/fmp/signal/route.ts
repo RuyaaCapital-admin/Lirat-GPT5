@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 30 // Maximum 30 seconds for signal fetch
 
 /**
  * Get Trading Signal API Route for Agent Builder

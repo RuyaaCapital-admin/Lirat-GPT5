@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { ratesManager } from "@/lib/fmpClient"
 
 export const runtime = "nodejs"
+export const maxDuration = 60 // Maximum 60 seconds for Vercel timeout safety
 
 const encoder = new TextEncoder()
 
@@ -21,14 +22,19 @@ export async function GET() {
   }
 
   let keepAlive: NodeJS.Timeout | null = null
+  let timeout: NodeJS.Timeout | null = null
   let onUpdate: (() => void) | null = null
 
   const stream = new ReadableStream({
     start(controller) {
       const sendSnapshot = () => {
-        const snapshot = ratesManager.getSerializableSnapshot()
-        if (snapshot) {
-          controller.enqueue(streamJson(snapshot))
+        try {
+          const snapshot = ratesManager.getSerializableSnapshot()
+          if (snapshot) {
+            controller.enqueue(streamJson(snapshot))
+          }
+        } catch (error) {
+          console.error("[rates/stream] Send snapshot error:", error)
         }
       }
 
@@ -38,17 +44,39 @@ export async function GET() {
 
       ratesManager.on("update", onUpdate)
 
-      controller.enqueue(streamComment("connected"))
-      sendSnapshot()
+      try {
+        controller.enqueue(streamComment("connected"))
+        sendSnapshot()
+      } catch (error) {
+        console.error("[rates/stream] Initial send error:", error)
+      }
 
       keepAlive = setInterval(() => {
-        controller.enqueue(streamComment("keepalive"))
+        try {
+          controller.enqueue(streamComment("keepalive"))
+        } catch (error) {
+          console.error("[rates/stream] Keepalive error:", error)
+        }
       }, 15_000)
+
+      // Close stream after 50 seconds to prevent Vercel timeout
+      timeout = setTimeout(() => {
+        try {
+          controller.enqueue(streamComment("timeout: closing connection"))
+          controller.close()
+        } catch (error) {
+          // Stream may already be closed
+        }
+      }, 50_000)
     },
     cancel() {
       if (keepAlive) {
         clearInterval(keepAlive)
         keepAlive = null
+      }
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
       }
       if (onUpdate) {
         ratesManager.off("update", onUpdate)

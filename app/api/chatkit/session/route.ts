@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from '@/lib/supabase'
 
+export const maxDuration = 30 // Maximum 30 seconds for ChatKit session creation
+export const dynamic = "force-dynamic"
+
 export async function POST(request: Request) {
   try {
     // Verify authentication from Authorization header

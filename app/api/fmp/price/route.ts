@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 30 // Maximum 30 seconds for price fetch
 
 /**
  * Get Price API Route for Agent Builder

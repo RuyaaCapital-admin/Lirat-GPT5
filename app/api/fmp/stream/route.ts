@@ -3,6 +3,7 @@ import { fmpStreamHub, type StreamPayload } from "@/lib/fmpStreamHub"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
+export const maxDuration = 60 // Maximum 60 seconds for Vercel timeout safety
 
 const encoder = new TextEncoder()
 
@@ -32,13 +33,18 @@ export async function GET(request: Request) {
   }
 
   let keepAlive: NodeJS.Timeout | null = null
+  let timeout: NodeJS.Timeout | null = null
   let unsubscribe: (() => void) | null = null
 
   const stream = new ReadableStream({
     start(controller) {
       const push = (payload: StreamPayload) => {
         if (payload.symbol !== symbol) return
-        controller.enqueue(streamJson(payload))
+        try {
+          controller.enqueue(streamJson(payload))
+        } catch (error) {
+          console.error('[FMP Stream] Enqueue error:', error)
+        }
       }
 
       try {
@@ -52,13 +58,31 @@ export async function GET(request: Request) {
       controller.enqueue(streamComment(`subscribed ${symbol}`))
 
       keepAlive = setInterval(() => {
-        controller.enqueue(streamComment("keepalive"))
+        try {
+          controller.enqueue(streamComment("keepalive"))
+        } catch (error) {
+          console.error('[FMP Stream] Keepalive error:', error)
+        }
       }, 15_000)
+
+      // Close stream after 50 seconds to prevent Vercel timeout
+      timeout = setTimeout(() => {
+        try {
+          controller.enqueue(streamComment("timeout: closing connection"))
+          controller.close()
+        } catch (error) {
+          // Stream may already be closed
+        }
+      }, 50_000)
     },
     cancel() {
       if (keepAlive) {
         clearInterval(keepAlive)
         keepAlive = null
+      }
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
       }
       if (unsubscribe) {
         unsubscribe()
