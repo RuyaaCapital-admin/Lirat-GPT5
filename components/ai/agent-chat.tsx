@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/auth-context"
-import { createClientSupabase } from "@/lib/supabase-client"
 
 type UiMessage = {
   id: string
@@ -34,7 +33,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   ref,
 ) {
   const { session } = useAuth()
-  const supabase = createClientSupabase()
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       id: "welcome",
@@ -48,7 +46,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   const [toolEvents, setToolEvents] = useState<ToolInvocation[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const userCanChat = Boolean(session?.access_token)
+  const isAuthenticated = Boolean(session?.access_token)
 
   useImperativeHandle(ref, () => ({
     sendPrompt(prompt: string) {
@@ -78,17 +76,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   const submitMessage = async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || status === "thinking") return
-    if (!userCanChat) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "Please sign in to chat with the Liirat agent.",
-        },
-      ])
-      return
-    }
 
     const userMessage: UiMessage = { id: crypto.randomUUID(), role: "user", content: trimmed }
     const optimistic = [...messages, userMessage]
@@ -98,7 +85,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
 
     try {
       const headers: HeadersInit = { "Content-Type": "application/json" }
-      if (session?.access_token) {
+      if (isAuthenticated && session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`
       }
 
@@ -234,25 +221,25 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="border-t border-emerald-100/70 px-6 py-4 dark:border-white/5">
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-100/80 bg-white px-4 py-2 dark:border-white/10 dark:bg-white/5">
-          <Input
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder={userCanChat ? "Ask for live FX, signals, or news…" : "Sign in to chat"}
-            className="flex-1 border-none bg-transparent p-0 text-sm focus-visible:ring-0"
-            disabled={!userCanChat || status === "thinking"}
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!userCanChat || status === "thinking" || !input.trim()}
-            className="rounded-full"
-          >
-            <SendHorizontal className="h-4 w-4" />
-          </Button>
-        </div>
-      </form>
+        <form onSubmit={handleSubmit} className="border-t border-emerald-100/70 px-6 py-4 dark:border-white/5">
+          <div className="flex items-center gap-2 rounded-2xl border border-emerald-100/80 bg-white px-4 py-2 dark:border-white/10 dark:bg-white/5">
+            <Input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask for live FX, signals, or news…"
+              className="flex-1 border-none bg-transparent p-0 text-sm focus-visible:ring-0"
+              disabled={status === "thinking"}
+            />
+            <Button
+              type="submit"
+              size="icon"
+              disabled={status === "thinking" || !input.trim()}
+              className="rounded-full"
+            >
+              <SendHorizontal className="h-4 w-4" />
+            </Button>
+          </div>
+        </form>
     </div>
   )
 })

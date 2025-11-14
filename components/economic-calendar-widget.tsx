@@ -255,12 +255,12 @@ function EconomicCalendarWidgetComponent() {
         </div>
       </div>
 
-      {!isReady && (
-        <div className="calendar-loading">
-          <div className="loading-spinner" />
-          <p>{TEXT.loading[language]}</p>
-        </div>
-      )}
+        {!isReady && (
+          <div className="calendar-loading">
+            <div className="loading-spinner" />
+            <p>{TEXT.loading[language]}</p>
+          </div>
+        )}
 
         <div className="calendar-inner" data-ready={isReady}>
           <div ref={containerRef} className="calendar-inner__host" />
@@ -270,7 +270,18 @@ function EconomicCalendarWidgetComponent() {
               {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
             </span>
           </div>
-          <div className="calendar-inner__brand-guard" aria-hidden="true" />
+          <div
+            className="calendar-inner__brand-guard"
+            aria-hidden="true"
+            onPointerDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+          />
         </div>
 
       <div className="bottom-blocker" aria-hidden="true">
@@ -643,36 +654,20 @@ function EconomicCalendarWidgetComponent() {
           border-color: rgba(117, 204, 158, 0.45);
         }
 
-        .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
-          opacity: 1;
-          transform: translateY(0);
-        }
+          .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
+            opacity: 1;
+            transform: translateY(0);
+          }
 
-        /* Mask all branding, links, and copyright */
-        .calendar-wrapper [class*="copyright"],
-        .calendar-wrapper [class*="brand"],
-        .calendar-wrapper [class*="logo"],
-        .calendar-wrapper [class*="footer"],
-        .calendar-wrapper [class*="trademark"],
-        .calendar-wrapper [href*="mql5"],
-        .calendar-wrapper [href*="tradays"],
-        .calendar-wrapper [id*="copyright"],
-        .calendar-wrapper [id*="brand"],
-        .calendar-wrapper a[href*="mql5.com"],
-        .calendar-wrapper a[href*="tradays.com"],
-        .calendar-wrapper a[href*="calendar.widget"] {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          position: absolute !important;
-          left: -9999px !important;
-          pointer-events: none !important;
-          height: 0 !important;
-          width: 0 !important;
-          overflow: hidden !important;
-          font-size: 0 !important;
-          line-height: 0 !important;
-        }
+          /* Gently suppress provider branding without breaking interactions */
+          .calendar-wrapper a[href*="mql5.com"],
+          .calendar-wrapper a[href*="tradays.com"],
+          .calendar-wrapper a[href*="calendar.widget"],
+          .calendar-wrapper [class*="copyright"],
+          .calendar-wrapper [id*="copyright"] {
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
         
         /* Mask bottom corners where links might appear */
         .calendar-inner__host::after {

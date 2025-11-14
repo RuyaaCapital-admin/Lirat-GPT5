@@ -36,16 +36,16 @@ export default function AIPage() {
     window.localStorage.setItem("ai-chart-timeframe", timeframe)
   }, [timeframe])
 
-  const handleQuickAction = (message: string) => {
-    agentRef.current?.sendPrompt(message)
-  }
+    const handleQuickAction = (message: string) => {
+      agentRef.current?.sendPrompt(message)
+    }
 
-  return (
-    <div
-      className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-[#f5f8f4] via-background to-[#eaf2eb] dark:from-[#080f0b] dark:via-[#0d1a13] dark:to-[#08100b]"
-      dir={locale === "ar" ? "rtl" : "ltr"}
-    >
-      <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+    return (
+      <div
+        className="min-h-[calc(100vh-4rem)] bg-linear-to-br from-[#f5f8f4] via-background to-[#eaf2eb] dark:from-[#080f0b] dark:via-[#0d1a13] dark:to-[#08100b]"
+        dir={locale === "ar" ? "rtl" : "ltr"}
+      >
+        <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="relative overflow-hidden rounded-[32px] border border-white/50 bg-card/80 px-6 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/5 dark:bg-card/50 dark:shadow-[0_28px_80px_rgba(5,10,7,0.85)]">
           <div className="absolute inset-y-0 right-0 hidden w-1/2 opacity-50 lg:block" aria-hidden="true">
@@ -70,45 +70,30 @@ export default function AIPage() {
           </div>
         </div>
 
-        <NotificationTray className="hidden lg:block" />
+          <NotificationTray className="hidden lg:block" />
 
-        {/* Desktop layout */}
-        <div className="hidden flex-1 lg:grid lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:gap-6">
-          <AgentChat ref={agentRef} />
-          <div className="flex flex-col gap-6">
-            <AiChartPlaceholder
-              symbol={symbol}
-              timeframe={timeframe}
-              onSymbolChange={setSymbol}
-              onTimeframeChange={setTimeframe}
-            />
-            <div className="rounded-[32px] border border-border/60 bg-card/95 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#101f17]/85">
-              <div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
-                <span>{locale === "ar" ? "مهام فورية" : "Quick actions"}</span>
-                <span className="text-primary/80">⌘K</span>
+          <div className="flex flex-1 flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,0.44fr)_minmax(0,0.56fr)] lg:gap-6">
+            <AgentChat ref={agentRef} className="order-2 min-h-[520px] lg:order-1" />
+            <div className="order-1 flex flex-col gap-5 lg:order-2">
+              <NotificationTray className="lg:hidden" />
+              <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg">
+                <AiChartPlaceholder
+                  symbol={symbol}
+                  timeframe={timeframe}
+                  onSymbolChange={setSymbol}
+                  onTimeframeChange={setTimeframe}
+                />
               </div>
-              <QuickActions onActionClick={handleQuickAction} />
+              <div className="rounded-[32px] border border-border/60 bg-card/95 p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#101f17]/85">
+                <div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.4em] text-muted-foreground">
+                  <span>{locale === "ar" ? "مهام فورية" : "Quick actions"}</span>
+                  <span className="text-primary/80">⌘K</span>
+                </div>
+                <QuickActions onActionClick={handleQuickAction} />
+              </div>
             </div>
           </div>
         </div>
-
-        {/* Mobile layout */}
-        <div className="flex-1 space-y-5 lg:hidden">
-          <NotificationTray />
-          <div className="rounded-3xl border border-border/60 bg-card/80 shadow-lg">
-            <AiChartPlaceholder
-              symbol={symbol}
-              timeframe={timeframe}
-              onSymbolChange={setSymbol}
-              onTimeframeChange={setTimeframe}
-            />
-          </div>
-          <div className="rounded-3xl border border-border/60 bg-card/70 shadow-md p-4">
-            <QuickActions onActionClick={handleQuickAction} />
-          </div>
-          <AgentChat ref={agentRef} />
-        </div>
-      </div>
     </div>
   )
 }

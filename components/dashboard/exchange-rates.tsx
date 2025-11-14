@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
-import { ArrowUpRight } from "lucide-react"
+import { AlertTriangle, ArrowUpRight, RefreshCw } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { convertToEnglishNumbers } from "@/lib/i18n"
+import TradingViewWidget from "@/components/tradingview-widget"
 
 interface ForexRate {
   pair: string
@@ -29,14 +30,37 @@ function formatNumber(value: number | null, fraction = 4) {
 
 function formatDelta(value: number | null) {
   if (value === null || Number.isNaN(value)) return "—"
-  const formatted = value > 99 ? value.toFixed(0) : value.toFixed(2)
+  const formatted = Math.abs(value) > 99 ? value.toFixed(0) : value.toFixed(2)
   return convertToEnglishNumbers(formatted)
+}
+
+function deriveTrySyp(usdSyp?: ForexRate, usdTry?: ForexRate): ForexRate | null {
+  if (!usdSyp?.price || !usdTry?.price || usdTry.price === 0) return null
+  const price = usdSyp.price / usdTry.price
+  const prevUsdSyp = usdSyp.change !== null && usdSyp.price !== null ? usdSyp.price - usdSyp.change : null
+  const prevUsdTry = usdTry.change !== null && usdTry.price !== null ? usdTry.price - usdTry.change : null
+  const prevRatio =
+    prevUsdSyp !== null && prevUsdTry !== null && prevUsdTry !== 0 ? prevUsdSyp / prevUsdTry : null
+  const change = prevRatio !== null ? price - prevRatio : null
+  const changePercent =
+    change !== null && prevRatio !== null && prevRatio !== 0 ? (change / prevRatio) * 100 : null
+
+  return {
+    pair: "TRY-SYP",
+    price,
+    change,
+    changePercent,
+    timestamp: Math.max(usdSyp.timestamp, usdTry.timestamp),
+  }
 }
 
 export function ExchangeRatesPanel() {
   const { locale } = useLocale()
   const [rates, setRates] = useState<Record<string, ForexRate>>({})
   const [loading, setLoading] = useState<boolean>(true)
+  const [fallbackActive, setFallbackActive] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const fetchRef = useRef<() => Promise<void>>(() => Promise.resolve())
 
   useEffect(() => {
     let isMounted = true
@@ -44,10 +68,11 @@ export function ExchangeRatesPanel() {
     const fetchRates = async () => {
       try {
         setLoading(true)
+        setErrorMessage(null)
         const query = pairs.map((item) => `pair=${item.pair}`).join("&")
         const response = await fetch(`/api/fmp/forex?${query}`, { cache: "no-store" })
         if (!response.ok) {
-          throw new Error("Failed to load forex rates")
+          throw new Error(await response.text())
         }
         const json = await response.json()
         if (!isMounted) return
@@ -56,9 +81,19 @@ export function ExchangeRatesPanel() {
         for (const rate of json.rates || []) {
           mapped[rate.pair] = rate
         }
+
+        const derived = deriveTrySyp(mapped["USD-SYP"], mapped["USD-TRY"])
+        if (derived) {
+          mapped["TRY-SYP"] = { ...mapped["TRY-SYP"], ...derived }
+        }
+
+        setFallbackActive(false)
         setRates(mapped)
       } catch (error) {
-        console.error("[v0] Forex panel error:", error)
+        console.error("[ExchangeRatesPanel] forex fetch failed", error)
+        if (!isMounted) return
+        setErrorMessage(error instanceof Error ? error.message : "Unable to reach FMP right now.")
+        setFallbackActive(true)
       } finally {
         if (isMounted) {
           setLoading(false)
@@ -67,6 +102,7 @@ export function ExchangeRatesPanel() {
     }
 
     fetchRates()
+    fetchRef.current = fetchRates
     const interval = window.setInterval(fetchRates, 60_000)
     return () => {
       isMounted = false
@@ -78,16 +114,20 @@ export function ExchangeRatesPanel() {
     () =>
       pairs.map((meta) => {
         const rate = rates[meta.pair]
-        const price = rate?.price ?? null
-        const change = rate?.changePercent ?? null
+        const derivedTrySyp = meta.pair === "TRY-SYP" ? deriveTrySyp(rates["USD-SYP"], rates["USD-TRY"]) : null
+        const price = derivedTrySyp?.price ?? rate?.price ?? null
+        const changePercent = derivedTrySyp?.changePercent ?? rate?.changePercent ?? null
         return {
           ...meta,
           price,
-          change,
+          changePercent,
         }
       }),
     [rates],
   )
+
+  const hasLiveRates = rows.some((row) => row.price !== null && Number.isFinite(row.price))
+  const showTradingViewFallback = fallbackActive || (!loading && !hasLiveRates)
 
   return (
     <div className="relative overflow-hidden rounded-[32px] border border-white/60 bg-white/85 shadow-[0_24px_70px_rgba(15,23,42,0.1)] backdrop-blur-lg dark:border-white/10 dark:bg-background/75 dark:shadow-[0_24px_70px_rgba(2,6,23,0.6)]">
@@ -115,51 +155,81 @@ export function ExchangeRatesPanel() {
           </Link>
         </div>
 
-        <div className="space-y-4">
-          {rows.map((row) => {
-            const positive = (row.change ?? 0) >= 0
-            const formattedPrice = formatNumber(row.price, row.pair === "USD-SYP" || row.pair === "TRY-SYP" ? 0 : 3)
-            const formattedChange = formatDelta(row.change)
-            const pairLabel = row.pair.replace("-", " / ")
-
-            return (
-              <div
-                key={row.id}
-                className={cn(
-                  "group relative flex items-center justify-between gap-6 overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/80 dark:shadow-[0_24px_70px_rgba(2,6,23,0.55)]",
-                )}
+          {errorMessage && (
+            <div className="flex items-center gap-2 rounded-2xl border border-amber-200/70 bg-amber-50/70 px-4 py-2 text-xs font-semibold text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>{locale === "ar" ? "نعرض النسخة الاحتياطية بسبب تأخر البيانات." : "Showing fallback data while FMP recovers."}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFallbackActive(false)
+                  setLoading(true)
+                  fetchRef.current()
+                }}
+                className="ml-auto inline-flex items-center gap-1 rounded-full border border-amber-400/60 px-2.5 py-0.5 text-[11px] uppercase tracking-[0.3em] text-amber-800 transition hover:border-amber-500 hover:text-amber-900 dark:border-amber-400/40 dark:text-amber-100 dark:hover:border-amber-300"
               >
-                <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/15 dark:via-primary/5" />
-                </div>
-                <div className="relative flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary dark:bg-primary/15 dark:text-primary-foreground">
-                    {pairLabel.split(" / ")[0]}
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-muted-foreground">{locale === "ar" ? row.labelAr : row.labelEn}</p>
-                    <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground/70">
-                      {convertToEnglishNumbers(pairLabel)}
-                    </p>
-                  </div>
-                </div>
-                <div className="relative flex items-center gap-4">
-                  <span className="text-2xl font-semibold text-foreground">{formattedPrice}</span>
-                  <span
+                <RefreshCw className="h-3 w-3" />
+                {locale === "ar" ? "تحديث" : "Retry"}
+              </button>
+            </div>
+          )}
+
+          {showTradingViewFallback ? (
+            <div className="rounded-[28px] border border-dashed border-emerald-200/70 bg-white/80 p-3 shadow-inner dark:border-emerald-500/20 dark:bg-white/5">
+              <TradingViewWidget />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {rows.map((row) => {
+                const positive = (row.changePercent ?? 0) >= 0
+                const formattedPrice = formatNumber(
+                  row.price,
+                  row.pair === "USD-SYP" || row.pair === "TRY-SYP" ? 0 : 3,
+                )
+                const formattedChange = formatDelta(row.changePercent)
+                const pairLabel = row.pair.replace("-", " / ")
+
+                return (
+                  <div
+                    key={row.id}
                     className={cn(
-                      "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
-                      positive
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
-                        : "bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300",
+                      "group relative flex items-center justify-between gap-6 overflow-hidden rounded-3xl border border-white/60 bg-white/90 px-6 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:border-primary/35 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/80 dark:shadow-[0_24px_70px_rgba(2,6,23,0.55)]",
                     )}
                   >
-                    {formattedChange === "—" ? formattedChange : `${positive ? "+" : ""}${formattedChange}%`}
-                  </span>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                    <div className="absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent dark:from-primary/15 dark:via-primary/5" />
+                    </div>
+                    <div className="relative flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 font-semibold text-primary dark:bg-primary/15 dark:text-primary-foreground">
+                        {pairLabel.split(" / ")[0]}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-muted-foreground">
+                          {locale === "ar" ? row.labelAr : row.labelEn}
+                        </p>
+                        <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground/70">
+                          {convertToEnglishNumbers(pairLabel)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="relative flex items-center gap-4">
+                      <span className="text-2xl font-semibold text-foreground">{formattedPrice}</span>
+                      <span
+                        className={cn(
+                          "flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold",
+                          positive
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300"
+                            : "bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-300",
+                        )}
+                      >
+                        {formattedChange === "—" ? formattedChange : `${positive ? "+" : ""}${formattedChange}%`}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
 
         {loading && (
           <div className="grid gap-3 sm:grid-cols-3">
