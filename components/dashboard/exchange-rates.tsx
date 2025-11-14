@@ -7,9 +7,8 @@ import { AlertTriangle, ArrowUpRight, RefreshCw } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
 import { convertToEnglishNumbers } from "@/lib/i18n"
 import TradingViewWidget from "@/components/tradingview-widget"
-import type { RatesApiResponse } from "@/lib/fmpClient"
 
-type RateSource = "fx" | "gold" | "derived"
+type RateSource = "fx" | "gold"
 
 type RateConfig = {
   id: string
@@ -29,8 +28,8 @@ const CONFIG: RateConfig[] = [
   { id: "lyd-try", labelEn: "LYD / TRY", labelAr: "دينار / ليرة", badge: "LYD", type: "fx", key: "LYD_TRY", decimals: 3, suffix: "₺" },
   { id: "egp-try", labelEn: "EGP / TRY", labelAr: "جنيه مصري / ليرة", badge: "EGP", type: "fx", key: "EGP_TRY", decimals: 3, suffix: "₺" },
   { id: "iqd-try", labelEn: "IQD / TRY", labelAr: "دينار عراقي / ليرة", badge: "IQD", type: "fx", key: "IQD_TRY", decimals: 4, suffix: "₺" },
-  { id: "usd-syp", labelEn: "USD / SYP", labelAr: "دولار / ليرة سورية", badge: "SYP", type: "fx", key: "SYP.USD_SYP", decimals: 0, suffix: "SYP" },
-  { id: "try-syp", labelEn: "TRY / SYP", labelAr: "ليرة تركية / ليرة سورية", badge: "TRY", type: "derived", key: "TRY_SYP", decimals: 0, suffix: "SYP" },
+  { id: "usd-syp", labelEn: "USD / SYP", labelAr: "دولار / ليرة سورية", badge: "SYP", type: "fx", key: "USD_SYP", decimals: 0, suffix: "SYP" },
+  { id: "try-syp", labelEn: "TRY / SYP", labelAr: "ليرة تركية / ليرة سورية", badge: "TRY", type: "fx", key: "TRY_SYP", decimals: 0, suffix: "SYP" },
   { id: "gold-24", labelEn: "Gold 24K", labelAr: "ذهب عيار 24", badge: "Au 24K", type: "gold", key: "k24", decimals: 0, suffix: "₺/g" },
   { id: "gold-22", labelEn: "Gold 22K", labelAr: "ذهب عيار 22", badge: "Au 22K", type: "gold", key: "k22", decimals: 0, suffix: "₺/g" },
   { id: "gold-21", labelEn: "Gold 21K", labelAr: "ذهب عيار 21", badge: "Au 21K", type: "gold", key: "k21", decimals: 0, suffix: "₺/g" },
@@ -39,6 +38,17 @@ const CONFIG: RateConfig[] = [
   { id: "gold-tam", labelEn: "Full Ottoman Coin", labelAr: "الليرة الذهبية التامة", badge: "Tam", type: "gold", key: "tamAltin", decimals: 0, suffix: "₺" },
   { id: "gold-ounce", labelEn: "Gold Ounce", labelAr: "أونصة ذهب", badge: "XAU", type: "gold", key: "ounceUSD", decimals: 2, suffix: "USD" },
 ]
+
+type ExchangeEntry = {
+  price: number | null
+  changePercent: number | null
+}
+
+type ExchangeBoardResponse = {
+  updatedAt: number
+  fx: Record<string, ExchangeEntry>
+  gold: Record<string, number | null>
+}
 
 function formatNumber(value: number | null, fraction = 4) {
   if (value === null || Number.isNaN(value)) return "—"
@@ -52,36 +62,13 @@ function formatDelta(value: number | null) {
   return convertToEnglishNumbers(formatted)
 }
 
-function resolveValue(payload: RatesApiResponse | null, config: RateConfig): number | null {
-  if (!payload) return null
-  if (config.type === "gold") {
-    return payload.gold?.[config.key as keyof typeof payload.gold] ?? null
-  }
-  if (config.type === "fx" && config.key.includes(".")) {
-    const [group, field] = config.key.split(".")
-    return (payload.fx as any)?.[group]?.[field] ?? null
-  }
-  if (config.type === "fx") {
-    return (payload.fx as any)?.[config.key] ?? null
-  }
-  if (config.type === "derived" && config.key === "TRY_SYP") {
-    const usdTry = (payload.fx as any)?.USD_TRY
-    const usdSyp = (payload.fx as any)?.SYP?.USD_SYP
-    if (!usdTry || !usdSyp || usdTry === 0) return null
-    return usdSyp / usdTry
-  }
-  return null
-}
-
 export function ExchangeRatesPanel() {
   const { locale } = useLocale()
-  const [snapshot, setSnapshot] = useState<RatesApiResponse | null>(null)
-  const [rowsState, setRowsState] = useState<Record<string, { price: number | null; changePercent: number | null }>>({})
+  const [board, setBoard] = useState<ExchangeBoardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
   const [fallbackActive, setFallbackActive] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fetchRef = useRef<() => Promise<void>>(() => Promise.resolve())
-  const previousPrices = useRef<Record<string, number | null>>({})
 
   useEffect(() => {
     let isMounted = true
@@ -90,29 +77,14 @@ export function ExchangeRatesPanel() {
       try {
         setLoading(true)
         setErrorMessage(null)
-        const response = await fetch("/api/rates", { cache: "no-store" })
+        const response = await fetch("/api/exchange-board", { cache: "no-store" })
         if (!response.ok) {
           throw new Error(await response.text())
         }
-        const json: RatesApiResponse = await response.json()
+        const json: ExchangeBoardResponse = await response.json()
         if (!isMounted) return
 
-        const nextRows: typeof rowsState = {}
-        for (const config of CONFIG) {
-          const price = resolveValue(json, config)
-          const prev = previousPrices.current[config.id]
-          let changePercent: number | null = null
-          if (price !== null && prev !== null && prev !== undefined && prev !== 0) {
-            changePercent = ((price - prev) / prev) * 100
-          }
-          nextRows[config.id] = { price, changePercent }
-        }
-        previousPrices.current = Object.fromEntries(
-          Object.entries(nextRows).map(([key, value]) => [key, value.price ?? null]),
-        )
-
-        setRowsState(nextRows)
-        setSnapshot(json)
+        setBoard(json)
         setFallbackActive(false)
       } catch (error) {
         console.error("[ExchangeRatesPanel] rates fetch failed", error)
@@ -135,19 +107,27 @@ export function ExchangeRatesPanel() {
     }
   }, [])
 
-  const rows = useMemo(
-    () =>
-      CONFIG.map((config) => ({
+  const rows = useMemo(() => {
+    return CONFIG.map((config) => {
+      if (config.type === "gold") {
+        return {
+          ...config,
+          price: board?.gold?.[config.key] ?? null,
+          changePercent: null,
+        }
+      }
+      const fxEntry = board?.fx?.[config.key]
+      return {
         ...config,
-        price: rowsState[config.id]?.price ?? null,
-        changePercent: rowsState[config.id]?.changePercent ?? null,
-      })),
-    [rowsState],
-  )
+        price: fxEntry?.price ?? null,
+        changePercent: fxEntry?.changePercent ?? null,
+      }
+    })
+  }, [board])
 
   const hasLiveRates = rows.some((row) => row.price !== null && Number.isFinite(row.price))
   const showTradingViewFallback = fallbackActive || (!loading && !hasLiveRates)
-  const lastUpdated = snapshot?.meta?.fetchedAt
+  const lastUpdated = board?.updatedAt
 
   return (
     <div className="relative overflow-hidden rounded-[32px] border border-white/60 bg-white/85 shadow-[0_24px_70px_rgba(15,23,42,0.1)] backdrop-blur-lg dark:border-white/10 dark:bg-background/75 dark:shadow-[0_24px_70px_rgba(2,6,23,0.6)]">

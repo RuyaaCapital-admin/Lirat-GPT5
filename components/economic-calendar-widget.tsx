@@ -609,7 +609,8 @@ function EconomicCalendarWidgetComponent() {
             bottom: 0;
             height: 32px;
             z-index: 6;
-            pointer-events: none;
+            pointer-events: auto;
+            cursor: not-allowed;
             background: linear-gradient(
               to top,
               rgba(249, 251, 247, 0.96) 0%,

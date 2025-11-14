@@ -3,11 +3,13 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { CheckCheck, Loader2, Shield } from "lucide-react"
+import { useTheme } from "next-themes"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotifications } from "@/hooks/use-notifications"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { useLocale as useLocaleContext } from "@/hooks/use-locale"
 
 type Preferences = {
   locale: "en" | "ar"
@@ -30,6 +32,8 @@ const DEFAULT_PREFS: Preferences = {
 export default function ProfilePage() {
   const { user, session, loading: authLoading, signOut } = useAuth()
   const { notifications, unreadCount, loading: notificationsLoading, markAsRead, refetch } = useNotifications(user?.id)
+  const { setTheme } = useTheme()
+  const { setLocale } = useLocaleContext()
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFS)
   const [prefsLoading, setPrefsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -52,14 +56,17 @@ export default function ProfilePage() {
           throw new Error("Failed to load preferences")
         }
         const data = await response.json()
-        setPreferences({
+        const nextPrefs: Preferences = {
           locale: data.locale ?? "en",
           theme: data.theme ?? "light",
           notification_settings: {
             email: data.notification_settings?.email ?? true,
             push: data.notification_settings?.push ?? true,
           },
-        })
+        }
+        setPreferences(nextPrefs)
+        setTheme(nextPrefs.theme)
+        setLocale(nextPrefs.locale)
       } catch (error) {
         console.error("[profile] preferences fetch failed", error)
       } finally {
@@ -156,7 +163,10 @@ export default function ProfilePage() {
                 <p className="text-sm font-semibold text-muted-foreground">Locale</p>
                 <Select
                   value={preferences.locale}
-                  onValueChange={(value: "en" | "ar") => setPreferences((prev) => ({ ...prev, locale: value }))}
+                  onValueChange={(value: "en" | "ar") => {
+                    setPreferences((prev) => ({ ...prev, locale: value }))
+                    setLocale(value)
+                  }}
                 >
                   <SelectTrigger className="w-full justify-between">
                     <SelectValue placeholder="Select language" />
@@ -171,9 +181,10 @@ export default function ProfilePage() {
                 <p className="text-sm font-semibold text-muted-foreground">Theme</p>
                 <Select
                   value={preferences.theme}
-                  onValueChange={(value: "light" | "dark" | "system") =>
+                  onValueChange={(value: "light" | "dark" | "system") => {
+                    setTheme(value)
                     setPreferences((prev) => ({ ...prev, theme: value }))
-                  }
+                  }}
                 >
                   <SelectTrigger className="w-full justify-between">
                     <SelectValue placeholder="Select theme" />
