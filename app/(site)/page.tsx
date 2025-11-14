@@ -39,9 +39,12 @@ export default function Dashboard() {
   const isArabic = locale === "ar"
 
   return (
-    <div className="space-y-12" dir={isArabic ? "rtl" : "ltr"}>
+    <div
+      className="space-y-12 rounded-[32px] bg-linear-to-br from-[#f4f8f2] via-[#eef5ef] to-[#e4f0e7] p-1 dark:from-[#050907] dark:via-[#0a120d] dark:to-[#050a07]"
+      dir={isArabic ? "rtl" : "ltr"}
+    >
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-[40px] border border-white/60 bg-white/85 shadow-[0_40px_120px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-background/80 dark:shadow-[0_30px_100px_rgba(2,6,23,0.65)]">
+      <section className="relative overflow-hidden rounded-[40px] border border-emerald-100/60 bg-linear-to-br from-white/95 via-emerald-50/70 to-white/80 shadow-[0_40px_120px_rgba(15,23,42,0.14)] backdrop-blur-xl dark:border-emerald-500/20 dark:bg-linear-to-br dark:from-[#0c1510]/95 dark:via-[#0f1c14]/80 dark:to-[#0b130e]/85 dark:shadow-[0_36px_110px_rgba(4,8,6,0.85)]">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-32 -left-28 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/30" />
           <div className="absolute -bottom-24 -right-16 h-80 w-80 rounded-full bg-sky-200/35 blur-[120px] dark:bg-sky-500/25" />
@@ -77,10 +80,10 @@ export default function Dashboard() {
                 <Link
                   key={metric.value}
                   href={metric.href}
-                  className="hero-animate rounded-2xl border border-white/60 bg-white/80 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_50px_rgba(15,23,42,0.12)] backdrop-blur dark:border-white/10 dark:bg-background/70 dark:shadow-[0_16px_40px_rgba(2,6,23,0.55)]"
+                  className="hero-animate rounded-2xl border border-emerald-100/70 bg-white/85 p-4 shadow-[0_16px_40px_rgba(15,23,42,0.1)] transition-transform duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_24px_55px_rgba(15,23,42,0.15)] backdrop-blur dark:border-emerald-500/20 dark:bg-[#0a1510]/80 dark:shadow-[0_18px_48px_rgba(5,10,7,0.75)]"
                   style={{ "--hero-delay": `${0.28 + index * 0.08}s` } as CSSProperties}
                 >
-                  <div className={`mb-3 h-0.5 w-12 rounded-full bg-gradient-to-r ${metric.accent}`} />
+                  <div className={`mb-3 h-0.5 w-12 rounded-full bg-linear-to-r ${metric.accent}`} />
                   <div className="text-2xl font-semibold text-foreground">{metric.value}</div>
                   <p className="text-sm text-muted-foreground">{isArabic ? metric.labelAr : metric.labelEn}</p>
                 </Link>
@@ -89,7 +92,7 @@ export default function Dashboard() {
           </div>
           <div className="hero-animate relative w-full max-w-xl self-stretch" style={{ "--hero-delay": "0.45s" } as CSSProperties}>
             <div className="absolute -right-10 top-10 h-44 w-44 rounded-full bg-primary/10 blur-2xl dark:bg-primary/20" />
-            <div className="relative h-full overflow-hidden rounded-[32px] border border-white/40 bg-gradient-to-br from-white/60 via-white/40 to-white/10 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-white/10 dark:from-primary/5 dark:via-background/40 dark:to-background/60">
+            <div className="relative h-full overflow-hidden rounded-[32px] border border-white/40 bg-linear-to-br from-white/60 via-white/40 to-white/10 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-white/10 dark:from-primary/5 dark:via-background/40 dark:to-background/60">
               <Image
                 src="/images/liirat-logo.png"
                 alt={isArabic ? "شعار ليرات" : "Liirat emblem"}
@@ -106,8 +109,8 @@ export default function Dashboard() {
       <PriceBoard />
 
       {/* Calendar */}
-      <section className="space-y-6 rounded-[36px] border border-white/60 bg-white/90 p-6 shadow-[0_32px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-background/75 dark:shadow-[0_30px_90px_rgba(2,6,23,0.65)] md:p-8">
-        <div className="flex flex-col gap-4 border-b border-white/60 pb-6 dark:border-white/10 lg:flex-row lg:items-center lg:justify-between">
+      <section className="space-y-6 rounded-[36px] border border-emerald-100/70 bg-linear-to-br from-white/95 to-emerald-50/60 p-6 shadow-[0_32px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-emerald-500/15 dark:bg-linear-to-br dark:from-[#07100b]/90 dark:to-[#0f1f16]/85 dark:shadow-[0_30px_90px_rgba(4,8,6,0.85)] md:p-8">
+        <div className="flex flex-col gap-4 border-b border-emerald-100/70 pb-6 dark:border-emerald-500/25 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.4em] text-primary">
               <BarChart2 className="h-4 w-4" />
@@ -128,10 +131,12 @@ export default function Dashboard() {
 
       {/* Market + News */}
       <section className="grid gap-8 lg:grid-cols-2">
-        <div className="rounded-[32px] border border-white/60 bg-white/90 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.1)] backdrop-blur-lg dark:border-white/10 dark:bg-background/75 dark:shadow-[0_24px_70px_rgba(2,6,23,0.6)]">
+        <div className="rounded-[32px] border border-emerald-100/60 bg-white/92 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-lg dark:border-emerald-500/20 dark:bg-[#0a1510]/85 dark:shadow-[0_24px_70px_rgba(5,10,7,0.75)]">
           <MarketOverviewCard />
         </div>
-        <HomeNewsRail />
+        <div className="rounded-[32px] border border-emerald-100/60 bg-white/92 p-4 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur-lg dark:border-emerald-500/20 dark:bg-[#0a1510]/85 dark:shadow-[0_24px_70px_rgba(5,10,7,0.75)]">
+          <HomeNewsRail />
+        </div>
       </section>
     </div>
   )
