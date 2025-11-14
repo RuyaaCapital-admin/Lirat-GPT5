@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { Bell, CheckCheck, Loader2, Shield } from "lucide-react"
+import { CheckCheck, Loader2, Shield } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { useNotifications } from "@/hooks/use-notifications"
 import { Button } from "@/components/ui/button"

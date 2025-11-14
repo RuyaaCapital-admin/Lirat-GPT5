@@ -26,8 +26,17 @@ const CONFIG: RateConfig[] = [
   { id: "usd-try", labelEn: "USD / TRY", labelAr: "دولار / ليرة", badge: "USD", type: "fx", key: "USD_TRY", decimals: 3, suffix: "₺" },
   { id: "eur-try", labelEn: "EUR / TRY", labelAr: "يورو / ليرة", badge: "EUR", type: "fx", key: "EUR_TRY", decimals: 3, suffix: "₺" },
   { id: "gbp-try", labelEn: "GBP / TRY", labelAr: "جنيه / ليرة", badge: "GBP", type: "fx", key: "GBP_TRY", decimals: 3, suffix: "₺" },
+  { id: "lyd-try", labelEn: "LYD / TRY", labelAr: "دينار / ليرة", badge: "LYD", type: "fx", key: "LYD_TRY", decimals: 3, suffix: "₺" },
+  { id: "egp-try", labelEn: "EGP / TRY", labelAr: "جنيه مصري / ليرة", badge: "EGP", type: "fx", key: "EGP_TRY", decimals: 3, suffix: "₺" },
+  { id: "iqd-try", labelEn: "IQD / TRY", labelAr: "دينار عراقي / ليرة", badge: "IQD", type: "fx", key: "IQD_TRY", decimals: 4, suffix: "₺" },
   { id: "usd-syp", labelEn: "USD / SYP", labelAr: "دولار / ليرة سورية", badge: "SYP", type: "fx", key: "SYP.USD_SYP", decimals: 0, suffix: "SYP" },
-  { id: "gold-24", labelEn: "Gold 24K", labelAr: "ذهب عيار 24", badge: "Au", type: "gold", key: "k24", decimals: 0, suffix: "₺/g" },
+  { id: "try-syp", labelEn: "TRY / SYP", labelAr: "ليرة تركية / ليرة سورية", badge: "TRY", type: "derived", key: "TRY_SYP", decimals: 0, suffix: "SYP" },
+  { id: "gold-24", labelEn: "Gold 24K", labelAr: "ذهب عيار 24", badge: "Au 24K", type: "gold", key: "k24", decimals: 0, suffix: "₺/g" },
+  { id: "gold-22", labelEn: "Gold 22K", labelAr: "ذهب عيار 22", badge: "Au 22K", type: "gold", key: "k22", decimals: 0, suffix: "₺/g" },
+  { id: "gold-21", labelEn: "Gold 21K", labelAr: "ذهب عيار 21", badge: "Au 21K", type: "gold", key: "k21", decimals: 0, suffix: "₺/g" },
+  { id: "gold-18", labelEn: "Gold 18K", labelAr: "ذهب عيار 18", badge: "Au 18K", type: "gold", key: "k18", decimals: 0, suffix: "₺/g" },
+  { id: "gold-14", labelEn: "Gold 14K", labelAr: "ذهب عيار 14", badge: "Au 14K", type: "gold", key: "k14", decimals: 0, suffix: "₺/g" },
+  { id: "gold-tam", labelEn: "Full Ottoman Coin", labelAr: "الليرة الذهبية التامة", badge: "Tam", type: "gold", key: "tamAltin", decimals: 0, suffix: "₺" },
   { id: "gold-ounce", labelEn: "Gold Ounce", labelAr: "أونصة ذهب", badge: "XAU", type: "gold", key: "ounceUSD", decimals: 2, suffix: "USD" },
 ]
 
