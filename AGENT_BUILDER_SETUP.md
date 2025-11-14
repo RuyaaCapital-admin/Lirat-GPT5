@@ -14,8 +14,8 @@ This guide explains how to connect your FMP Premium API endpoints to **OpenAI's 
 
 Your ChatKit agent will have access to three main function tools:
 
-1. **get_price** - Real-time price data
-2. **get_signal** - Trading signals and technical analysis
+1. **get_symbol_price** - Real-time price data
+2. **submit_trade_signal** - Trading signals and technical analysis
 3. **get_news** - Latest financial news
 
 The agent will **only** call these functions when the user asks for specific data. Normal conversation stays LLM-only (fast, no latency).
@@ -26,7 +26,7 @@ All endpoints are ready and deployed:
 
 ### 1. Price Endpoint
 
-- **URL:** `https://your-domain.vercel.app/api/fmp/price?symbol=AAPL`
+- **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/get_symbol_price?symbol=AAPL`
 - **Method:** GET
 - **Parameters:**
   - `symbol` (required): Stock, crypto, or forex symbol (e.g., "AAPL", "BTCUSD", "EURUSD")
@@ -52,7 +52,7 @@ All endpoints are ready and deployed:
 
 ### 2. Signal Endpoint
 
-- **URL:** `https://your-domain.vercel.app/api/fmp/signal?symbol=AAPL&timeframe=1d`
+- **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/submit_trade_signal?symbol=AAPL&timeframe=1d`
 
 - **Method:** GET
 - **Parameters:**
@@ -93,7 +93,7 @@ All endpoints are ready and deployed:
 
 ### 3. News Endpoint
 
-- **URL:** `https://your-domain.vercel.app/api/fmp/news?symbol=AAPL&limit=5`
+- **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/news?symbol=AAPL&limit=5`
 
 - **Method:** GET
 - **Parameters:**
@@ -129,9 +129,9 @@ All endpoints are ready and deployed:
 
 In your ChatKit Agent Builder workflow (inside OpenAI Platform), add three Function nodes:
 
-#### Function 1: `get_price`
+#### Function 1: `get_symbol_price`
 
-1. **Function Name:** `get_price`
+1. **Function Name:** `get_symbol_price`
 
 1. **Description:**
 
@@ -159,14 +159,14 @@ Examples: "What's the price of AAPL?", "Show me BTCUSD price", "How is TSLA doin
 1. **API Configuration (in OpenAI Agent Builder):**
 
    - **Method:** GET
-   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price`
+   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/get_symbol_price`
    - **Query Parameters:** `symbol={{symbol}}`
    - **Headers:** None required
    - **Note:** In Agent Builder, you'll configure this as an "HTTP Function" or "API Function"
 
-#### Function 2: `get_signal`
+#### Function 2: `submit_trade_signal`
 
-1. **Function Name:** `get_signal`
+1. **Function Name:** `submit_trade_signal`
 
 1. **Description:**
 
@@ -201,7 +201,7 @@ Examples: "What's the signal for AAPL?", "Should I buy TSLA?", "Analyze BTCUSD"
 1. **API Configuration (in OpenAI Agent Builder):**
 
    - **Method:** GET
-   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/signal`
+   - **URL:** `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/submit_trade_signal`
    - **Query Parameters:** `symbol={{symbol}}&timeframe={{timeframe}}`
    - **Headers:** None required
    - **Note:** In Agent Builder, configure as an "HTTP Function" or "API Function"
@@ -255,8 +255,8 @@ In your OpenAI Agent Builder workflow, update the system prompt (usually in the 
 You are a friendly, conversational AI trading assistant for LIIRAT. You help users with market data, trading signals, and financial news.
 
 **IMPORTANT - Function Usage:**
-- Use get_price(symbol) ONLY when the user explicitly asks about price, current value, or market data for a specific symbol
-- Use get_signal(symbol) ONLY when the user asks about trading signals, technical analysis, or buy/sell recommendations
+- Use get_symbol_price(symbol) ONLY when the user explicitly asks about price, current value, or market data for a specific symbol
+- Use submit_trade_signal(symbol) ONLY when the user asks about trading signals, technical analysis, or buy/sell recommendations
 - Use get_news(symbol) ONLY when the user asks about news or recent events
 - For general conversation, greetings, or questions that don't need data, respond naturally WITHOUT calling any functions
 
@@ -273,8 +273,8 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
 - When presenting signals, explain what they mean in simple terms
 
 **Examples:**
-- User: "What's AAPL price?" → Call get_price("AAPL"), then respond: "Apple (AAPL) is currently trading at $175.50, up 1.33% today."
-- User: "Should I buy TSLA?" → Call get_signal("TSLA"), then respond conversationally with the signal and reasoning
+- User: "What's AAPL price?" → Call get_symbol_price("AAPL"), then respond: "Apple (AAPL) is currently trading at $175.50, up 1.33% today."
+- User: "Should I buy TSLA?" → Call submit_trade_signal("TSLA"), then respond conversationally with the signal and reasoning
 - User: "Hello!" → Respond naturally: "Hello! How can I help you with trading today?"
 - User: "What do you think about the market?" → Respond conversationally without calling functions (unless they ask for specific data)
 ```
@@ -289,7 +289,7 @@ You are a friendly, conversational AI trading assistant for LIIRAT. You help use
    - Verify that functions are called only when needed (not for "hello" or general chat)
 
 2. **Verify API Endpoints (Test Before Adding to Agent Builder):**
-   - Test directly: `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/fmp/price?symbol=AAPL`
+   - Test directly: `https://v0-modern-e-commerce-website-sigma-seven.vercel.app/api/get_symbol_price?symbol=AAPL`
    - Should return JSON with price data
    - If endpoints work, then add them to Agent Builder
 
