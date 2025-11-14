@@ -53,7 +53,7 @@ export default function RootLayout({
         <body className={`${inter.variable} ${notoSansArabic.variable} antialiased`}>
           <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
             <AuthProvider>
-              <LocaleProvider>{children}</LocaleProvider>
+            <LocaleProvider>{children}</LocaleProvider>
             </AuthProvider>
           </ThemeProvider>
         </body>

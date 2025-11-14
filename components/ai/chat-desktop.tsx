@@ -8,7 +8,7 @@ const ProtectedChatPanel = dynamic(() => import("./protected-chat-panel").then((
 
 export function LiiratChatDesktop() {
   return (
-    <div className="w-full h-[650px] rounded-3xl bg-zinc-900/80 border border-zinc-800 overflow-hidden">
+    <div className="w-full h-full rounded-lg bg-zinc-900/80 border border-zinc-800 overflow-hidden flex flex-col">
       <ProtectedChatPanel />
     </div>
   )

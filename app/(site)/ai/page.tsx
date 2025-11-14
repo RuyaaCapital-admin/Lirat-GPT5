@@ -60,83 +60,52 @@ export default function AIPage() {
   }
 
   return (
-    <div className="space-y-6" dir={locale === "ar" ? "rtl" : "ltr"}>
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">{getTranslation(locale, "ai")}</h1>
-        <p className="wrap-break-word text-muted-foreground">
-          {locale === "ar"
-            ? "مساعدك الذكي للتداول مع رؤى السوق والتحكم في الرسوم البيانية والمشورة المخصصة"
-            : "Your intelligent trading assistant powered by advanced AI. Get market insights, control charts, and receive personalized trading advice."}
-        </p>
+    <div className="h-[calc(100vh-4rem)] flex flex-col" dir={locale === "ar" ? "rtl" : "ltr"}>
+      {/* Header - Fixed at top */}
+      <div className="shrink-0 px-4 py-3 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+        <div className="flex flex-col space-y-1">
+          <h1 className="text-2xl font-bold tracking-tight">{getTranslation(locale, "ai")}</h1>
+          <p className="text-sm text-muted-foreground line-clamp-1">
+            {locale === "ar"
+              ? "مساعدك الذكي للتداول مع رؤى السوق والتحكم في الرسوم البيانية والمشورة المخصصة"
+              : "Your intelligent trading assistant powered by advanced AI. Get market insights, control charts, and receive personalized trading advice."}
+          </p>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <AiChartPlaceholder />
-        </div>
-
-        <div className="space-y-6">
-          <QuickActions onActionClick={handleQuickAction} />
-
-          <div className="rounded-lg border bg-card p-4 backdrop-blur supports-backdrop-filter:bg-card/80">
-            <h3 className="mb-3 truncate font-semibold">{locale === "ar" ? "إمكانيات الذكاء الاصطناعي" : "AI Capabilities"}</h3>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="wrap-break-word">{locale === "ar" ? "تحليل السوق في الوقت الفعلي" : "Real-time market analysis"}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="wrap-break-word">
-                  {locale === "ar" ? "التحكم في الرسوم البيانية وتعيين المستويات" : "Chart control and level setting"}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="wrap-break-word">
-                  {locale === "ar" ? "توصيات استراتيجية التداول" : "Trading strategy recommendations"}
-                </span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="wrap-break-word">{locale === "ar" ? "نصائح إدارة المخاطر" : "Risk management advice"}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                <span className="wrap-break-word">
-                  {locale === "ar" ? "تحليل الأحداث الاقتصادية" : "Economic event analysis"}
-                </span>
-              </div>
-            </div>
+      {/* Main Content - Fixed layout for desktop */}
+      <div className="flex-1 overflow-hidden">
+        {/* Desktop: Split view with chart, quick actions, and chat */}
+        <div className="hidden lg:grid lg:grid-cols-12 h-full gap-4 p-4">
+          {/* Left: Chart (60%) */}
+          <div className="lg:col-span-7 h-full overflow-hidden">
+            <AiChartPlaceholder />
           </div>
 
-          <div className="rounded-lg border bg-muted/50 p-4 backdrop-blur supports-backdrop-filter:bg-muted/40">
-            <h3 className="mb-3 truncate font-semibold">{locale === "ar" ? "نصائح الاستخدام" : "Usage Tips"}</h3>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="wrap-break-word">
-                • {locale === "ar" ? "اسأل أسئلة محددة حول اتجاهات السوق" : "Ask specific questions about market trends"}
-              </p>
-              <p className="wrap-break-word">
-                • {locale === "ar" ? "اطلب تعديلات الرسم البياني مثل إضافة دعم" : "Request chart modifications like add support"}
-              </p>
-              <p className="wrap-break-word">
-                •{" "}
-                {locale === "ar" ? "احصل على مشورة الاستراتيجية لظروف السوق المختلفة" : "Get strategy advice for different market conditions"}
-              </p>
-              <p className="wrap-break-word">
-                • {locale === "ar" ? "حلل الأحداث الاقتصادية وتأثيرها" : "Analyze economic events and their impact"}
-              </p>
+          {/* Right: Quick Actions + Chat (40%) */}
+          <div className="lg:col-span-5 flex flex-col gap-4 h-full overflow-hidden">
+            {/* Quick Actions - Scrollable */}
+            <div className="shrink-0 overflow-y-auto">
+              <QuickActions onActionClick={handleQuickAction} />
             </div>
+
+            {/* Chat - Takes remaining space */}
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <LiiratChatDesktop />
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile: Stacked layout */}
+        <div className="lg:hidden h-full overflow-y-auto p-4 space-y-4">
+          <div className="space-y-4">
+            <AiChartPlaceholder />
+            <QuickActions onActionClick={handleQuickAction} />
           </div>
         </div>
       </div>
 
-      {/* Desktop: Full ChatKit panel (only on large screens) */}
-      <div className="hidden lg:block mt-6">
-        <LiiratChatDesktop />
-      </div>
-
-      {/* Mobile: Floating bubble (only visible on small screens) */}
+      {/* Mobile: Floating bubble (fixed position) */}
       <div className="lg:hidden">
         <LiiratChatBubble />
       </div>
