@@ -270,6 +270,7 @@ function EconomicCalendarWidgetComponent() {
               {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
             </span>
           </div>
+          <div className="calendar-inner__brand-guard" aria-hidden="true" />
         </div>
 
       <div className="bottom-blocker" aria-hidden="true">
@@ -514,6 +515,17 @@ function EconomicCalendarWidgetComponent() {
           z-index: 1;
         }
 
+        .calendar-inner__brand-guard {
+          position: absolute;
+          inset-inline: 0;
+          bottom: 0;
+          height: 120px;
+          z-index: 6;
+          pointer-events: auto;
+          background: transparent;
+          cursor: default;
+        }
+
         .calendar-inner__host #economicCalendarWidget {
           width: 100% !important;
           max-width: 100% !important;
@@ -534,6 +546,8 @@ function EconomicCalendarWidgetComponent() {
           overflow: hidden !important;
           background: transparent !important;
           transition: filter 0.35s ease;
+          pointer-events: none !important;
+          cursor: default !important;
         }
 
         [data-theme="dark"] .calendar-inner__host iframe,
@@ -643,30 +657,6 @@ function EconomicCalendarWidgetComponent() {
           overflow: hidden !important;
           font-size: 0 !important;
           line-height: 0 !important;
-        }
-        
-        /* Disable all links in calendar iframe area - COMPLETELY DISABLE CLICKING */
-        .calendar-inner__host,
-        .calendar-inner__host *,
-        .calendar-inner__host a,
-        .calendar-inner__host a *,
-        .calendar-inner__host [href],
-        .calendar-inner__host [href] *,
-        .calendar-inner__host iframe,
-        .calendar-inner__host iframe * {
-          pointer-events: none !important;
-          cursor: default !important;
-          user-select: none !important;
-        }
-        
-        /* Overlay to block all interactions */
-        .calendar-inner__host::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          z-index: 30;
-          pointer-events: auto !important;
-          cursor: default !important;
         }
         
         /* Mask bottom corners where links might appear */

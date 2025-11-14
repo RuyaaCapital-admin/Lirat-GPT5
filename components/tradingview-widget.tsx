@@ -39,16 +39,32 @@ function TradingViewWidget() {
   }, [isDark])
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg" style={{ pointerEvents: "none" }}>
+    <div className="relative w-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_18px_40px_rgba(15,23,42,0.25)]">
       {/* Overlay to block ALL interactions */}
-      <div 
-        className="absolute inset-0 z-50 cursor-default" 
-        style={{ pointerEvents: "auto" }}
-        onClick={(e) => e.preventDefault()}
-        onMouseDown={(e) => e.preventDefault()}
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="tradingview-overlay-guard absolute inset-0 z-50 cursor-default"
+        onPointerDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
       />
       {/* Mask TradingView links and branding */}
       <style jsx global>{`
+        .tradingview-overlay-guard {
+          background: transparent;
+          border: none;
+          padding: 0;
+          margin: 0;
+          pointer-events: auto !important;
+          appearance: none;
+        }
         .tradingview-widget-container {
           position: relative;
           overflow: hidden;
@@ -122,8 +138,8 @@ function TradingViewWidget() {
           }
         ` : ""}
       `}</style>
-      <div className="tradingview-widget-container" ref={container} style={{ pointerEvents: "none" }}>
-        <div className="tradingview-widget-container__widget" style={{ pointerEvents: "none" }}></div>
+      <div className="tradingview-widget-container" ref={container}>
+        <div className="tradingview-widget-container__widget"></div>
         <div className="tradingview-widget-copyright" style={{ display: "none" }}>
           <a
             href="https://www.tradingview.com/markets/currencies/"

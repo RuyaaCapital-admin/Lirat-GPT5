@@ -44,16 +44,31 @@ function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
   }, [isDark, symbol])
 
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-lg" style={{ pointerEvents: "none" }}>
+    <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_24px_70px_rgba(15,23,42,0.25)]">
       {/* Overlay to block ALL interactions */}
-      <div 
-        className="absolute inset-0 z-50 cursor-default" 
-        style={{ pointerEvents: "auto" }}
-        onClick={(e) => e.preventDefault()}
-        onMouseDown={(e) => e.preventDefault()}
+      <button
+        type="button"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="tradingview-advanced-overlay absolute inset-0 z-50 cursor-default"
+        onPointerDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+        }}
       />
       {/* Mask TradingView links and branding */}
       <style jsx global>{`
+        .tradingview-advanced-overlay {
+          background: transparent;
+          border: none;
+          padding: 0;
+          pointer-events: auto !important;
+          appearance: none;
+        }
         .tradingview-widget-container__chart {
           position: relative;
           overflow: hidden;
