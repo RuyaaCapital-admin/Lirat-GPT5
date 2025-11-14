@@ -60,71 +60,58 @@ export default function AIPage() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-background via-background to-primary/5" dir={locale === "ar" ? "rtl" : "ltr"}>
-      {/* Header - Fixed at top */}
-      <div className="shrink-0 px-4 py-4 border-b border-border/50 bg-background/95 backdrop-blur-xl supports-backdrop-filter:bg-background/80">
-        <div className="flex flex-col space-y-2">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="text-xl">🤖</span>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              {getTranslation(locale, "ai")}
-            </h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {locale === "ar"
-              ? "مساعدك الذكي للتداول مع رؤى السوق والتحكم في الرسوم البيانية والمشورة المخصصة"
-              : "Your intelligent trading assistant powered by advanced AI. Get market insights, control charts, and receive personalized trading advice."}
-          </p>
-        </div>
-      </div>
-
-      {/* Main Content - Fixed layout for desktop */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        {/* Desktop: Split view with chart, quick actions, and chat */}
-        <div className="hidden lg:grid lg:grid-cols-12 h-full gap-5 p-6">
-          {/* Left: Chart (60%) */}
-          <div className="lg:col-span-7 h-full min-h-0">
-            <div className="h-full rounded-3xl border border-border/70 bg-card/60 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur">
-              <AiChartPlaceholder symbol={symbol} />
-            </div>
-          </div>
-
-          {/* Right: Quick Actions + Chat (40%) */}
-          <div className="lg:col-span-5 flex h-full min-h-0 flex-col gap-5">
-            {/* Quick Actions - Scrollable */}
-            <div className="rounded-3xl border border-border/60 bg-card/40 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur overflow-hidden">
-              <div className="max-h-[320px] overflow-y-auto p-5">
-                <QuickActions onActionClick={handleQuickAction} />
-              </div>
-            </div>
-
-            {/* Chat - Takes remaining space */}
-            <div className="flex-1 min-h-0 rounded-3xl border border-border/70 bg-card/70 shadow-[0_30px_90px_rgba(15,23,42,0.22)] backdrop-blur overflow-hidden">
-              <div className="h-full">
-                <LiiratChatDesktop />
+    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-background via-background to-muted/50" dir={locale === "ar" ? "rtl" : "ltr"}>
+      <div className="mx-auto flex h-full w-full max-w-6xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="shrink-0 rounded-3xl border border-border/40 bg-card/70 px-6 py-5 shadow-[0_24px_60px_rgba(15,23,42,0.12)] backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-2xl">🤖</div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight">{getTranslation(locale, "ai")}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {locale === "ar"
+                    ? "مساحتك لرؤية الرسم البياني والتصرف الفوري ومحادثة الوكيل الذكي في آنٍ واحد."
+                    : "See the chart, fire quick actions, and chat with your trading agent all at once."}
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Mobile: Stacked layout */}
-        <div className="lg:hidden h-full overflow-y-auto px-4 pb-20 pt-4 space-y-4">
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-border/60 bg-card/60 shadow-lg overflow-hidden">
-              <AiChartPlaceholder symbol={symbol} />
-            </div>
-            <div className="rounded-3xl border border-border/60 bg-card/40 shadow-md p-4">
+        {/* Desktop layout */}
+        <div className="hidden flex-1 lg:grid lg:grid-cols-[320px_minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[360px_minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-6 lg:py-6">
+          <div className="rounded-3xl border border-border/60 bg-card/70 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur flex flex-col">
+            <div className="space-y-4 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.45em] text-muted-foreground">
+                {locale === "ar" ? "أوامر سريعة" : "Quick actions"}
+              </p>
               <QuickActions onActionClick={handleQuickAction} />
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Mobile: Floating bubble (fixed position) */}
-      <div className="lg:hidden">
-        <LiiratChatBubble />
+          <div className="rounded-3xl border border-border/70 bg-card/80 shadow-[0_32px_90px_rgba(15,23,42,0.18)] backdrop-blur overflow-hidden">
+            <AiChartPlaceholder symbol={symbol} />
+          </div>
+
+          <div className="rounded-3xl border border-border/70 bg-card/80 shadow-[0_32px_90px_rgba(15,23,42,0.22)] backdrop-blur overflow-hidden">
+            <LiiratChatDesktop />
+          </div>
+        </div>
+
+        {/* Mobile layout */}
+        <div className="flex-1 space-y-5 lg:hidden">
+          <div className="rounded-3xl border border-border/50 bg-card/70 shadow-lg">
+            <AiChartPlaceholder symbol={symbol} />
+          </div>
+          <div className="rounded-3xl border border-border/50 bg-card/50 shadow-md p-4">
+            <QuickActions onActionClick={handleQuickAction} />
+          </div>
+        </div>
+
+        <div className="pt-6 lg:hidden">
+          <LiiratChatBubble />
+        </div>
       </div>
     </div>
   )

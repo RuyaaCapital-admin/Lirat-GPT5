@@ -338,7 +338,7 @@ function EconomicCalendarWidgetComponent() {
           max-width: 100%;
           min-height: 840px;
           height: auto;
-          background: linear-gradient(180deg, rgba(250, 252, 250, 0.98), rgba(233, 243, 236, 0.94));
+          background: linear-gradient(180deg, rgba(249, 251, 247, 0.98), rgba(232, 242, 235, 0.92));
           border-radius: 32px;
           border: 1px solid rgba(192, 214, 202, 0.6);
           box-shadow: 0 28px 80px rgba(26, 46, 31, 0.16);
@@ -352,9 +352,9 @@ function EconomicCalendarWidgetComponent() {
 
         [data-theme="dark"] .calendar-wrapper,
         .dark .calendar-wrapper {
-          background: linear-gradient(185deg, rgba(9, 16, 15, 0.94), rgba(12, 22, 18, 0.88));
+          background: linear-gradient(185deg, rgba(8, 15, 13, 0.94), rgba(11, 20, 16, 0.88));
           border-color: rgba(70, 120, 86, 0.35);
-          box-shadow: 0 30px 90px rgba(2, 6, 23, 0.65);
+          box-shadow: 0 30px 90px rgba(2, 6, 23, 0.6);
         }
 
         .calendar-controls {
@@ -519,11 +519,26 @@ function EconomicCalendarWidgetComponent() {
           position: absolute;
           inset-inline: 0;
           bottom: 0;
-          height: 120px;
+          height: 110px;
           z-index: 6;
           pointer-events: auto;
-          background: transparent;
+          background: linear-gradient(
+            to top,
+            rgba(249, 251, 247, 0.96) 0%,
+            rgba(241, 248, 243, 0.65) 55%,
+            rgba(241, 248, 243, 0) 100%
+          );
           cursor: default;
+        }
+
+        [data-theme="dark"] .calendar-inner__brand-guard,
+        .dark .calendar-inner__brand-guard {
+          background: linear-gradient(
+            to top,
+            rgba(8, 15, 13, 0.92) 0%,
+            rgba(11, 20, 16, 0.7) 55%,
+            rgba(11, 20, 16, 0) 100%
+          );
         }
 
         .calendar-inner__host #economicCalendarWidget {
@@ -561,16 +576,16 @@ function EconomicCalendarWidgetComponent() {
           pointer-events: none;
           z-index: 3;
           background:
-            linear-gradient(0deg, rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0) 14%),
-            linear-gradient(180deg, rgba(255, 255, 255, 0) 60%, rgba(10, 21, 16, 0.85) 100%);
-          mix-blend-mode: multiply;
+            linear-gradient(0deg, rgba(249, 252, 247, 0.85) 0%, rgba(249, 252, 247, 0) 18%),
+            linear-gradient(180deg, rgba(249, 252, 247, 0) 62%, rgba(214, 234, 221, 0.8) 100%);
+          mix-blend-mode: normal;
         }
 
         [data-theme="dark"] .calendar-inner__mask,
         .dark .calendar-inner__mask {
           background:
-            linear-gradient(0deg, rgba(11, 20, 16, 0.72) 0%, rgba(11, 20, 16, 0) 14%),
-            linear-gradient(180deg, rgba(11, 20, 16, 0) 58%, rgba(11, 20, 16, 0.9) 100%);
+            linear-gradient(0deg, rgba(12, 22, 18, 0.72) 0%, rgba(12, 22, 18, 0) 18%),
+            linear-gradient(180deg, rgba(12, 22, 18, 0) 58%, rgba(12, 22, 18, 0.95) 100%);
           mix-blend-mode: normal;
         }
 
@@ -703,9 +718,9 @@ function EconomicCalendarWidgetComponent() {
           height: 122px;
           background: linear-gradient(
             to top,
-            rgba(250, 252, 250, 0.98) 0%,
-            rgba(236, 244, 238, 0.88) 55%,
-            rgba(236, 244, 238, 0.42) 85%,
+            rgba(249, 251, 247, 0.98) 0%,
+            rgba(236, 244, 238, 0.82) 55%,
+            rgba(236, 244, 238, 0.35) 85%,
             rgba(236, 244, 238, 0) 100%
           );
           z-index: 15;
@@ -719,9 +734,9 @@ function EconomicCalendarWidgetComponent() {
         .dark .bottom-blocker {
           background: linear-gradient(
             to top,
-            rgba(10, 17, 14, 0.96) 0%,
-            rgba(11, 20, 16, 0.82) 55%,
-            rgba(11, 20, 16, 0.45) 85%,
+            rgba(8, 15, 13, 0.96) 0%,
+            rgba(11, 20, 16, 0.8) 55%,
+            rgba(11, 20, 16, 0.42) 85%,
             rgba(11, 20, 16, 0) 100%
           );
         }
