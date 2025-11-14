@@ -3,7 +3,12 @@
 import React, { useEffect, useRef, memo } from "react"
 import { useTheme } from "next-themes"
 
-function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
+type ChartProps = {
+  symbol?: string
+  timeframe?: string
+}
+
+function TradingViewChart({ symbol = "AAPL", timeframe = "1h" }: ChartProps) {
   const container = useRef<HTMLDivElement>(null)
   const { theme, resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark" || theme === "dark"
@@ -21,7 +26,7 @@ function TradingViewChart({ symbol = "AAPL" }: { symbol?: string }) {
     script.innerHTML = JSON.stringify({
       autosize: true,
       symbol: symbol,
-      interval: "D",
+      interval: timeframe.toUpperCase(),
       timezone: "Etc/UTC",
       theme: "light", // Always use light, adjust with CSS
       style: "1",

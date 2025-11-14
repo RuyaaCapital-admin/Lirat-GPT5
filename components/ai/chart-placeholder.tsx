@@ -2,75 +2,93 @@
 
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
-import { ModernPanel, ModernPanelContent, ModernPanelHeader, ModernPanelTitle } from "@/components/modern-panel"
 import TradingViewChart from "@/components/ai/tradingview-chart"
 import { cn } from "@/lib/utils"
 
-export function AiChartPlaceholder({ symbol = "AAPL" }: { symbol?: string }) {
+type ChartTimeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d"
+
+const TIMEFRAME_OPTIONS: ChartTimeframe[] = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"]
+
+type ChartProps = {
+  symbol: string
+  timeframe: ChartTimeframe
+  onSymbolChange: (next: string) => void
+  onTimeframeChange: (next: ChartTimeframe) => void
+}
+
+export function AiChartPlaceholder({ symbol, timeframe, onSymbolChange, onTimeframeChange }: ChartProps) {
   const { theme, resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark" || theme === "dark"
-  const [useTradingView, setUseTradingView] = useState(false)
-  const [wsError, setWsError] = useState(false)
+  const [draftSymbol, setDraftSymbol] = useState(symbol)
 
-  // Check if WebSocket fails (simulate check after a delay)
   useEffect(() => {
-    // Check for WebSocket errors in console or network
-    const checkWebSocket = () => {
-      // If WebSocket fails, fallback to TradingView
-      // This is a simple check - in production you'd check actual WebSocket connection
-      const timer = setTimeout(() => {
-        // For now, always use TradingView as fallback since WebSocket chart is disabled
-        setUseTradingView(true)
-      }, 2000)
+    setDraftSymbol(symbol)
+  }, [symbol])
 
-      return () => clearTimeout(timer)
-    }
-
-    checkWebSocket()
-  }, [])
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!draftSymbol.trim()) return
+    onSymbolChange(draftSymbol.trim().toUpperCase())
+  }
 
   return (
-    <ModernPanel
+    <div
       className={cn(
-        "h-full overflow-hidden border shadow-xl flex flex-col",
-        isDark
-          ? "border-slate-800/60 bg-slate-900/80"
-          : "border-slate-200/70 bg-white/95"
+        "flex h-full flex-col gap-4 rounded-[32px] border px-6 py-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] transition",
+        isDark ? "border-emerald-500/20 bg-[#0d1b13]" : "border-emerald-100 bg-white"
       )}
     >
-      <ModernPanelHeader className="shrink-0">
-        <ModernPanelTitle className={cn(isDark ? "text-slate-100" : "text-slate-900")}>
-          {symbol} Chart
-        </ModernPanelTitle>
-      </ModernPanelHeader>
-      <ModernPanelContent className="p-0 flex-1 min-h-0">
-        {useTradingView ? (
-          <div className="relative h-full w-full overflow-hidden rounded-b-3xl border-t flex items-center justify-center"
-            style={{
-              borderColor: isDark ? "rgba(51, 65, 85, 0.6)" : "rgba(226, 232, 240, 0.7)"
-            }}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-primary/80">
+            {isDark ? "جلسة الرسم" : "Chart focus"}
+          </p>
+          <h3 className="text-2xl font-semibold text-foreground">{symbol}</h3>
+          <p className="text-xs text-muted-foreground">{timeframe.toUpperCase()} • {isDark ? "محدث" : "Live snapshot"}</p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex items-center gap-2 rounded-2xl border border-emerald-100/70 bg-white/70 px-3 py-2 text-sm dark:border-white/10 dark:bg-white/5">
+          <input
+            value={draftSymbol}
+            onChange={(event) => setDraftSymbol(event.target.value)}
+            className="w-28 bg-transparent text-sm font-semibold uppercase tracking-wide text-foreground placeholder:text-muted-foreground focus:outline-none dark:text-white"
+            placeholder="AAPL"
+            maxLength={10}
+          />
+          <button
+            type="submit"
+            className="rounded-full bg-primary/90 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-primary-foreground transition hover:bg-primary"
           >
-            <TradingViewChart symbol={symbol} />
-          </div>
-        ) : (
-          <div
+            Go
+          </button>
+        </form>
+      </div>
+
+      <div className="flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-[0.3em]">
+        {TIMEFRAME_OPTIONS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onTimeframeChange(option)}
             className={cn(
-              "relative h-full w-full overflow-hidden rounded-b-3xl border-t flex items-center justify-center",
-              isDark
-                ? "border-slate-800/60 bg-slate-900/50"
-                : "border-slate-200/70 bg-slate-50/50"
+              "rounded-full border px-3 py-1 transition",
+              option === timeframe
+                ? isDark
+                  ? "border-primary/50 bg-primary/20 text-primary"
+                  : "border-primary bg-primary/10 text-primary"
+                : isDark
+                  ? "border-white/10 text-white/60 hover:border-white/20"
+                  : "border-emerald-100 text-emerald-900 hover:border-emerald-200"
             )}
           >
-            <div className="text-center space-y-2">
-              <p className={cn(
-                "text-sm font-medium",
-                isDark ? "text-slate-300" : "text-slate-600"
-              )}>Loading chart...</p>
-            </div>
-          </div>
-        )}
-      </ModernPanelContent>
-    </ModernPanel>
+            {option}
+          </button>
+        ))}
+      </div>
+
+      <div className="relative min-h-[320px] flex-1 overflow-hidden rounded-[28px] border border-emerald-100/60 bg-white/80 dark:border-white/10 dark:bg-[#0a1410]/85">
+        <TradingViewChart symbol={symbol} timeframe={timeframe} />
+      </div>
+    </div>
   )
 }
 
