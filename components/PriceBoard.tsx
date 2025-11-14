@@ -15,9 +15,12 @@ import {
   Wifi,
 } from "lucide-react"
 import { useLocale } from "@/hooks/use-locale"
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { ModernPanel, ModernPanelContent, ModernPanelHeader, ModernPanelTitle } from "@/components/modern-panel"
 import type { RatesApiResponse } from "@/lib/fmpClient"
+import TradingViewWidget from "@/components/tradingview-widget"
 
 type Trend = "up" | "down" | "flat"
 
@@ -207,7 +210,10 @@ function formatStale(seconds: number, locale: string) {
 
 export default function PriceBoard() {
   const { locale } = useLocale()
+  const { theme, resolvedTheme } = useTheme()
   const isRTL = locale === "ar"
+  const isDark = resolvedTheme === "dark" || theme === "dark"
+  const [showTradingView, setShowTradingView] = useState(false)
 
   const copy = useMemo<Copy>(
     () => ({
@@ -539,81 +545,137 @@ export default function PriceBoard() {
       : null
 
   const showErrorInline = Boolean(error && !resolvedData)
+  
+  // Check if rates are displaying properly - if not, show TradingView widget
+  useEffect(() => {
+    if (!resolvedData || isLoading) return
+    
+    // Check if we have valid rate data
+    const hasValidRates = 
+      resolvedData.fx && 
+      (resolvedData.fx.USD_TRY || resolvedData.fx.EUR_TRY || resolvedData.fx.GBP_TRY)
+    
+    // If no valid rates after 5 seconds, show TradingView
+    if (!hasValidRates && !showTradingView) {
+      const timer = setTimeout(() => {
+        setShowTradingView(true)
+      }, 5000)
+      return () => clearTimeout(timer)
+    } else if (hasValidRates) {
+      setShowTradingView(false)
+    }
+  }, [resolvedData, isLoading, showTradingView])
 
   return (
     <section
       dir={isRTL ? "rtl" : "ltr"}
-      className="relative isolate w-full overflow-hidden bg-gradient-to-br from-[#05110b] via-[#071810] to-[#04110b] px-3 py-9 sm:px-4"
+      className="relative isolate w-full overflow-hidden px-3 py-4 sm:px-4"
     >
-      <div className="absolute inset-0 -z-10 opacity-60">
-        <div className="absolute -top-24 left-1/3 h-44 w-44 -translate-x-1/2 rounded-full bg-emerald-400/15 blur-3xl sm:h-56 sm:w-56" />
-        <div className="absolute bottom-0 left-6 h-52 w-52 rounded-full bg-teal-400/10 blur-[130px]" />
-        <div className="absolute -bottom-28 right-4 h-52 w-52 rounded-full bg-lime-400/10 blur-[150px]" />
-      </div>
-
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 rounded-[24px] border border-emerald-200/12 bg-[#0b1711]/85 p-5 shadow-[0_35px_110px_rgba(6,17,11,0.52)] backdrop-blur-xl sm:p-6">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-emerald-200/30 bg-white/10 shadow-[0_0_14px_rgba(16,185,129,0.35)]">
-              <Image src="/images/liirat-logo.png" alt="Liirat logo" fill className="object-contain p-2" priority />
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold uppercase tracking-[0.32em] text-emerald-100 sm:text-[0.85rem]">
-                {copy.heading}
-              </h2>
-              <p className="text-[12px] text-emerald-200/80 sm:text-sm">{copy.subheading}</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-[11px] tracking-[0.2em] text-emerald-200/70 sm:text-xs">
-            <LiveStatusPill status={liveStatus} liveMeta={resolvedData?.meta} copy={copy} />
-            <div className="flex items-center gap-2 rounded-full border border-emerald-200/20 bg-emerald-500/5 px-3 py-1.5 text-[11px] uppercase tracking-[0.24em] text-emerald-100/90">
-              <Clock3 className="h-3.5 w-3.5 text-emerald-300" />
-              <span>
-                {copy.updated}:{" "}
-                {resolvedData ? formatRelativeTime(resolvedData.meta.fetchedAt, locale) : copy.waiting}
-              </span>
-            </div>
-            {resolvedData?.meta.stale && typeof staleSeconds === "number" && (
-              <Badge
-                variant="outline"
-                className="border-amber-300/60 bg-amber-400/10 text-[10px] font-semibold uppercase tracking-[0.3em] text-amber-200"
-              >
-                {formatStale(staleSeconds, locale)}
-              </Badge>
-            )}
-          </div>
-        </header>
-
-        {feedbackTs && resolvedData && !resolvedData.meta.stale && <InlineFeedback message={copy.success} />}
-
-        {showErrorInline && <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} />}
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RatesCard
-            title={copy.goldTitle}
-            rows={goldRows}
-            locale={locale}
-            isLoading={isLoading && !resolvedData}
-          />
-          <RatesCard
-            title={copy.fxTitle}
-            rows={fxRows}
-            locale={locale}
-            isLoading={isLoading && !resolvedData}
-          />
-        </div>
-
-        <div className="flex flex-wrap gap-2 pt-1">
-          {crossPairs.map((chip) => (
-            <Chip key={chip.id} label={chip.label} value={chip.display} />
-          ))}
-        </div>
-
-        {!showErrorInline && error && resolvedData && (
-          <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} subtle />
+      <ModernPanel
+        className={cn(
+          "mx-auto w-full max-w-3xl border shadow-lg",
+          isDark
+            ? "border-slate-800/60 bg-slate-900/80"
+            : "border-slate-200/70 bg-white/95"
         )}
-      </div>
+      >
+        <ModernPanelHeader className="pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "relative h-8 w-8 overflow-hidden rounded-lg border",
+                isDark
+                  ? "border-slate-700 bg-slate-800"
+                  : "border-slate-200 bg-slate-50"
+              )}>
+                <Image src="/images/liirat-logo.png" alt="Liirat logo" fill className="object-contain p-1.5" priority />
+              </div>
+              <div className="space-y-0.5">
+                <ModernPanelTitle className="text-base">{copy.heading}</ModernPanelTitle>
+                <p className={cn(
+                  "text-xs",
+                  isDark ? "text-slate-400" : "text-slate-600"
+                )}>{copy.subheading}</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <LiveStatusPill status={liveStatus} liveMeta={resolvedData?.meta} copy={copy} isDark={isDark} />
+              <div className={cn(
+                "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs",
+                isDark
+                  ? "border-slate-700 bg-slate-800/50 text-slate-300"
+                  : "border-slate-200 bg-slate-50 text-slate-600"
+              )}>
+                <Clock3 className={cn("h-3 w-3", isDark ? "text-slate-400" : "text-slate-500")} />
+                <span>
+                  {copy.updated}:{" "}
+                  {resolvedData ? formatRelativeTime(resolvedData.meta.fetchedAt, locale) : copy.waiting}
+                </span>
+              </div>
+              {resolvedData?.meta.stale && typeof staleSeconds === "number" && (
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs",
+                    isDark
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                      : "border-amber-400/60 bg-amber-50 text-amber-700"
+                  )}
+                >
+                  {formatStale(staleSeconds, locale)}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </ModernPanelHeader>
+
+        <ModernPanelContent className="pt-0">
+
+          {feedbackTs && resolvedData && !resolvedData.meta.stale && (
+            <InlineFeedback message={copy.success} isDark={isDark} />
+          )}
+
+          {showErrorInline && (
+            <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} isDark={isDark} />
+          )}
+
+          {showTradingView ? (
+            <div className="w-full">
+              <TradingViewWidget />
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-3 lg:grid-cols-2">
+                <RatesCard
+                  title={copy.goldTitle}
+                  rows={goldRows}
+                  locale={locale}
+                  isLoading={isLoading && !resolvedData}
+                  isDark={isDark}
+                />
+                <RatesCard
+                  title={copy.fxTitle}
+                  rows={fxRows}
+                  locale={locale}
+                  isLoading={isLoading && !resolvedData}
+                  isDark={isDark}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                {crossPairs.map((chip) => (
+                  <Chip key={chip.id} label={chip.label} value={chip.display} isDark={isDark} />
+                ))}
+              </div>
+            </>
+          )}
+
+          {!showErrorInline && error && resolvedData && (
+            <InlineError message={copy.error} onRetry={() => mutate()} copy={copy} subtle isDark={isDark} />
+          )}
+        </ModernPanelContent>
+      </ModernPanel>
     </section>
   )
 }
@@ -623,62 +685,107 @@ function RatesCard({
   rows,
   locale,
   isLoading,
+  isDark,
 }: {
   title: string
   rows: RateRow[]
   locale: string
   isLoading: boolean
+  isDark: boolean
 }) {
   return (
-    <div className="relative overflow-hidden rounded-[20px] border border-emerald-200/12 bg-[#0f1f17]/80 p-4 shadow-[0_28px_80px_rgba(6,17,11,0.45)] backdrop-blur-2xl sm:p-5">
-      <div className="pointer-events-none absolute inset-0 opacity-50">
-        <div className="absolute -top-12 right-10 h-24 w-24 rounded-full bg-emerald-400/12 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-emerald-500/10 blur-[120px]" />
+    <div className={cn(
+      "relative overflow-hidden rounded-lg border p-3",
+      isDark
+        ? "border-slate-800 bg-slate-900/50"
+        : "border-slate-200 bg-slate-50/50"
+    )}>
+      <div className="relative mb-2 flex items-center gap-2">
+        <span className={cn(
+          "inline-flex h-1.5 w-1.5 rounded-full",
+          isDark ? "bg-emerald-400" : "bg-emerald-500"
+        )} />
+        <h3 className={cn(
+          "text-xs font-semibold uppercase tracking-wide",
+          isDark ? "text-slate-200" : "text-slate-700"
+        )}>{title}</h3>
       </div>
-      <div className="relative mb-3 flex items-center gap-2">
-        <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.9)]" />
-        <h3 className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-100 sm:text-[12px]">{title}</h3>
-      </div>
-      <div className="relative flex flex-col gap-2.5">
-          {rows.map((row) => (
-            <RateRowItem key={row.id} row={row} locale={locale} isLoading={isLoading} />
-          ))}
+      <div className="relative flex flex-col gap-2">
+        {rows.map((row) => (
+          <RateRowItem key={row.id} row={row} locale={locale} isLoading={isLoading} isDark={isDark} />
+        ))}
       </div>
     </div>
   )
 }
 
-function RateRowItem({ row, locale, isLoading }: { row: RateRow; locale: string; isLoading: boolean }) {
+function RateRowItem({ row, locale, isLoading, isDark }: { row: RateRow; locale: string; isLoading: boolean; isDark: boolean }) {
   const formatted = formatNumber(row.value, locale, row.decimals)
 
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-emerald-100/8 bg-white/5 px-3.5 py-2.5 text-emerald-50 shadow-[0_14px_45px_rgba(6,17,11,0.35)] backdrop-blur-lg transition hover:border-emerald-200/20">
-      <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-emerald-200/20 bg-emerald-400/10">
+    <div className={cn(
+      "flex items-center justify-between rounded-lg border px-2.5 py-2 transition",
+      isDark
+        ? "border-slate-800 bg-slate-800/30 hover:border-slate-700"
+        : "border-slate-200 bg-white/50 hover:border-slate-300"
+    )}>
+      <div className="flex items-center gap-2.5">
+        <div className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-full border",
+          isDark
+            ? "border-slate-700 bg-slate-800"
+            : "border-slate-200 bg-slate-100"
+        )}>
           {row.icon ?? getFlag(row.flagCode)}
         </div>
         <div className="flex flex-col">
-          <span className="text-[13px] font-semibold text-emerald-50/90">{row.label}</span>
-          <span className="text-[11px] uppercase tracking-[0.18em] text-emerald-200/60">
+          <span className={cn(
+            "text-xs font-semibold",
+            isDark ? "text-slate-200" : "text-slate-700"
+          )}>{row.label}</span>
+          <span className={cn(
+            "text-[10px] uppercase tracking-wide",
+            isDark ? "text-slate-400" : "text-slate-500"
+          )}>
             {row.code ?? row.unit}
           </span>
-          <span className="text-[11px] text-emerald-200/70">{row.code ? row.unit : null}</span>
+          {row.code && (
+            <span className={cn(
+              "text-[10px]",
+              isDark ? "text-slate-500" : "text-slate-600"
+            )}>{row.unit}</span>
+          )}
         </div>
       </div>
 
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-1.5">
         {isLoading ? (
           <div className="flex items-center gap-2">
-            <div className="h-3 w-12 animate-pulse rounded-full bg-emerald-200/30" />
-            <div className="h-3 w-6 animate-pulse rounded-full bg-emerald-200/20" />
+            <div className={cn(
+              "h-3 w-12 animate-pulse rounded-full",
+              isDark ? "bg-slate-700" : "bg-slate-200"
+            )} />
+            <div className={cn(
+              "h-3 w-6 animate-pulse rounded-full",
+              isDark ? "bg-slate-700" : "bg-slate-200"
+            )} />
           </div>
         ) : (
           <>
-            <TrendIcon trend={row.trend} />
-            <span className="text-base font-semibold tracking-tight text-emerald-50 sm:text-lg" aria-live="polite">
+            <TrendIcon trend={row.trend} isDark={isDark} />
+            <span
+              className={cn(
+                "text-sm font-semibold tracking-tight",
+                isDark ? "text-slate-100" : "text-slate-900"
+              )}
+              aria-live="polite"
+            >
               {formatted}
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-200/70">{row.suffix}</span>
+            <span className={cn(
+              "text-[10px] font-semibold uppercase tracking-wide",
+              isDark ? "text-slate-400" : "text-slate-600"
+            )}>{row.suffix}</span>
           </>
         )}
       </div>
@@ -686,17 +793,17 @@ function RateRowItem({ row, locale, isLoading }: { row: RateRow; locale: string;
   )
 }
 
-function TrendIcon({ trend }: { trend: Trend }) {
+function TrendIcon({ trend, isDark }: { trend: Trend; isDark: boolean }) {
   if (trend === "up") {
-    return <ArrowUpRight className="h-4 w-4 text-emerald-300" />
+    return <ArrowUpRight className={cn("h-3.5 w-3.5", isDark ? "text-emerald-400" : "text-emerald-600")} />
   }
   if (trend === "down") {
-    return <ArrowDownRight className="h-4 w-4 text-rose-300" />
+    return <ArrowDownRight className={cn("h-3.5 w-3.5", isDark ? "text-rose-400" : "text-rose-600")} />
   }
-  return <Minus className="h-4 w-4 text-emerald-200/60" />
+  return <Minus className={cn("h-3.5 w-3.5", isDark ? "text-slate-500" : "text-slate-400")} />
 }
 
-function LiveStatusPill({ status, liveMeta, copy }: { status: LiveStatus; liveMeta?: RatesApiResponse["meta"]; copy: Copy }) {
+function LiveStatusPill({ status, liveMeta, copy, isDark }: { status: LiveStatus; liveMeta?: RatesApiResponse["meta"]; copy: Copy; isDark: boolean }) {
   const isLive = liveMeta?.live && status === "open"
 
   let label: string
@@ -717,67 +824,116 @@ function LiveStatusPill({ status, liveMeta, copy }: { status: LiveStatus; liveMe
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em]",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold",
         isLive
-          ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.45)]"
+          ? isDark
+            ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300"
+            : "border-emerald-500/40 bg-emerald-50 text-emerald-700"
           : status === "error"
-            ? "border-amber-400/40 bg-amber-400/10 text-amber-200"
-            : "border-emerald-200/25 bg-emerald-400/10 text-emerald-100/80",
+            ? isDark
+              ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+              : "border-amber-400/40 bg-amber-50 text-amber-700"
+            : isDark
+              ? "border-slate-700 bg-slate-800/50 text-slate-300"
+              : "border-slate-200 bg-slate-50 text-slate-600",
       )}
     >
-      <Wifi className={cn("h-3.5 w-3.5", isLive ? "text-emerald-300" : status === "error" ? "text-amber-300" : "text-emerald-200/80")} />
+      <Wifi className={cn(
+        "h-3 w-3",
+        isLive
+          ? isDark ? "text-emerald-400" : "text-emerald-600"
+          : status === "error"
+            ? isDark ? "text-amber-400" : "text-amber-600"
+            : isDark ? "text-slate-400" : "text-slate-500"
+      )} />
       <span>{label}</span>
-      {isLive && <span className="relative flex h-1.5 w-1.5">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-300 opacity-75" />
-        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-300" />
-      </span>}
+      {isLive && (
+        <span className="relative flex h-1.5 w-1.5">
+          <span className={cn(
+            "absolute inline-flex h-full w-full animate-ping rounded-full opacity-75",
+            isDark ? "bg-emerald-400" : "bg-emerald-500"
+          )} />
+          <span className={cn(
+            "relative inline-flex h-1.5 w-1.5 rounded-full",
+            isDark ? "bg-emerald-400" : "bg-emerald-500"
+          )} />
+        </span>
+      )}
     </span>
   )
 }
 
-function InlineFeedback({ message }: { message: string }) {
+function InlineFeedback({ message, isDark }: { message: string; isDark: boolean }) {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-emerald-300/35 bg-emerald-400/10 px-4 py-2 text-sm text-emerald-50 shadow-[0_12px_28px_rgba(6,17,11,0.35)]">
-      <Sparkles className="h-4 w-4 text-emerald-200" />
+    <div className={cn(
+      "flex items-center gap-2 rounded-lg border px-3 py-2 text-xs",
+      isDark
+        ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+        : "border-emerald-400/60 bg-emerald-50 text-emerald-700"
+    )}>
+      <Sparkles className={cn("h-3.5 w-3.5", isDark ? "text-emerald-400" : "text-emerald-600")} />
       <span className="font-medium">{message}</span>
     </div>
   )
 }
 
-function InlineError({ message, onRetry, copy, subtle = false }: { message: string; onRetry: () => void; copy: Copy; subtle?: boolean }) {
+function InlineError({ message, onRetry, copy, subtle = false, isDark }: { message: string; onRetry: () => void; copy: Copy; subtle?: boolean; isDark: boolean }) {
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center gap-3 rounded-2xl border px-4 py-2 text-sm",
+        "flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs",
         subtle
-          ? "border-amber-200/30 bg-amber-500/5 text-amber-100"
-          : "border-rose-300/45 bg-rose-500/10 text-rose-50 shadow-[0_12px_30px_rgba(120,0,0,0.22)]",
+          ? isDark
+            ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+            : "border-amber-400/60 bg-amber-50 text-amber-700"
+          : isDark
+            ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
+            : "border-rose-400/60 bg-rose-50 text-rose-700",
       )}
     >
-      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+      <AlertCircle className={cn(
+        "h-3.5 w-3.5 shrink-0",
+        subtle
+          ? isDark ? "text-amber-400" : "text-amber-600"
+          : isDark ? "text-rose-400" : "text-rose-600"
+      )} />
       <span className="flex-1 min-w-[180px]">{message}</span>
       <button
         type="button"
         onClick={onRetry}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.3em] transition",
+          "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition",
           subtle
-            ? "border-amber-200/40 text-amber-100 hover:border-amber-100 hover:text-amber-50"
-            : "border-rose-200/40 text-rose-100 hover:border-rose-100 hover:text-rose-50",
+            ? isDark
+              ? "border-amber-500/40 text-amber-300 hover:border-amber-400 hover:text-amber-200"
+              : "border-amber-400/60 text-amber-700 hover:border-amber-500 hover:text-amber-800"
+            : isDark
+              ? "border-rose-500/40 text-rose-300 hover:border-rose-400 hover:text-rose-200"
+              : "border-rose-400/60 text-rose-700 hover:border-rose-500 hover:text-rose-800",
         )}
       >
-        <RefreshCw className="h-3.5 w-3.5" />
-          <span>{copy.retry}</span>
+        <RefreshCw className="h-3 w-3" />
+        <span>{copy.retry}</span>
       </button>
     </div>
   )
 }
 
-function Chip({ label, value }: { label: string; value: string }) {
+function Chip({ label, value, isDark }: { label: string; value: string; isDark: boolean }) {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/25 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-100 shadow-[0_16px_40px_rgba(6,17,11,0.35)] backdrop-blur-md">
+    <div className={cn(
+      "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold",
+      isDark
+        ? "border-slate-700 bg-slate-800/50 text-slate-200"
+        : "border-slate-200 bg-slate-50 text-slate-700"
+    )}>
       <span>{label}</span>
-      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-emerald-100/90">{value}</span>
+      <span className={cn(
+        "rounded-full px-2 py-0.5",
+        isDark
+          ? "bg-slate-700 text-slate-100"
+          : "bg-slate-200 text-slate-800"
+      )}>{value}</span>
     </div>
   )
 }
