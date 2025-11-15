@@ -34,8 +34,8 @@ export function AiChartPlaceholder({ symbol, timeframe, onSymbolChange, onTimefr
   return (
     <div
       className={cn(
-        "flex h-full flex-col gap-4 rounded-[32px] border px-6 py-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] transition",
-        isDark ? "border-emerald-500/20 bg-[#0d1b13]" : "border-emerald-100 bg-white"
+        "flex h-full min-h-[420px] flex-col gap-4 rounded-[32px] border px-6 py-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] transition",
+        isDark ? "border-emerald-500/20 bg-[#0d1b13]" : "border-emerald-100 bg-white",
       )}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
