@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, memo } from "react"
+import React, { useEffect, useMemo, useRef, memo } from "react"
 import { useTheme } from "next-themes"
 
 type ChartProps = {
@@ -8,15 +8,17 @@ type ChartProps = {
   timeframe?: string
 }
 
+const BRAND_STRIP = 64
+
 function TradingViewChart({ symbol = "AAPL", timeframe = "1h" }: ChartProps) {
   const container = useRef<HTMLDivElement>(null)
   const { theme, resolvedTheme } = useTheme()
   const isDark = resolvedTheme === "dark" || theme === "dark"
+  const backgroundColor = useMemo(() => (isDark ? "rgba(6, 15, 11, 1)" : "rgba(255, 255, 255, 1)"), [isDark])
 
   useEffect(() => {
     if (!container.current) return
 
-    // Clear any existing widget
     container.current.innerHTML = ""
 
     const script = document.createElement("script")
@@ -25,13 +27,13 @@ function TradingViewChart({ symbol = "AAPL", timeframe = "1h" }: ChartProps) {
     script.async = true
     script.innerHTML = JSON.stringify({
       autosize: true,
-      symbol: symbol,
+      symbol,
       interval: timeframe.toUpperCase(),
       timezone: "Etc/UTC",
-      theme: "light", // Always use light, adjust with CSS
+      theme: "light",
       style: "1",
       locale: "en",
-      backgroundColor: isDark ? "rgba(15, 23, 42, 1)" : "rgba(255, 255, 255, 1)",
+      backgroundColor,
       hide_top_toolbar: false,
       hide_legend: false,
       save_image: false,
@@ -41,83 +43,52 @@ function TradingViewChart({ symbol = "AAPL", timeframe = "1h" }: ChartProps) {
     container.current.appendChild(script)
 
     return () => {
-      // Cleanup
       if (container.current) {
         container.current.innerHTML = ""
       }
     }
-  }, [isDark, symbol])
+  }, [backgroundColor, symbol, timeframe])
 
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_24px_70px_rgba(15,23,42,0.25)]">
-      {/* Overlay to block ALL interactions */}
-      <button
-        type="button"
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-border/60 bg-card shadow-[0_24px_70px_rgba(15,23,42,0.25)]">
+      <style jsx global>{`
+        .tradingview-widget-container__chart {
+          position: relative;
+          overflow: hidden;
+          border-radius: 1.5rem;
+        }
+        .tradingview-widget-container__chart iframe {
+          background-color: ${backgroundColor} !important;
+        }
+        ${isDark
+          ? `
+        .tradingview-widget-container__chart iframe {
+          filter: brightness(0.93) contrast(1.05) saturate(0.92);
+        }
+        `
+          : ""}
+        .tradingview-widget-container__chart [class*="copyright"],
+        .tradingview-widget-container__chart [class*="trademark"],
+        .tradingview-widget-container__chart a[href*="tradingview.com"] {
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+      `}</style>
+      <div className="tradingview-widget-container__chart" ref={container} />
+      <div
         aria-hidden="true"
-        tabIndex={-1}
-        className="tradingview-advanced-overlay absolute inset-0 z-50 cursor-default"
+        className="pointer-events-auto absolute inset-x-0 bottom-0"
+        style={{
+          height: BRAND_STRIP,
+          background: `linear-gradient(to top, ${isDark ? "rgba(6,15,11,0.96)" : "rgba(255,255,255,0.96)"}, ${
+            isDark ? "rgba(6,15,11,0.2)" : "rgba(255,255,255,0)"
+          })`,
+        }}
         onPointerDown={(event) => {
           event.preventDefault()
           event.stopPropagation()
         }}
-        onClick={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-        }}
       />
-      {/* Mask TradingView links and branding */}
-      <style jsx global>{`
-        .tradingview-advanced-overlay {
-          background: transparent;
-          border: none;
-          padding: 0;
-          pointer-events: auto !important;
-          appearance: none;
-        }
-        .tradingview-widget-container__chart {
-          position: relative;
-          overflow: hidden;
-        }
-        .tradingview-widget-container__chart [class*="copyright"],
-        .tradingview-widget-container__chart [class*="trademark"],
-        .tradingview-widget-container__chart [href*="tradingview.com"],
-        .tradingview-widget-container__chart a[href] {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          pointer-events: none !important;
-          height: 0 !important;
-          width: 0 !important;
-          overflow: hidden !important;
-        }
-        .tradingview-widget-container__chart iframe {
-          pointer-events: none !important;
-          cursor: default !important;
-        }
-        /* Mask bottom corners */
-        .tradingview-widget-container__chart::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 40px;
-          background: ${isDark ? "rgba(15, 23, 42, 1)" : "rgba(255, 255, 255, 1)"};
-          z-index: 10;
-          pointer-events: none;
-        }
-        /* Dark mode adjustment - completely override TradingView's dark blue */
-        ${isDark ? `
-          .tradingview-widget-container__chart iframe {
-            filter: brightness(0.9) contrast(1.15) invert(0.05) hue-rotate(180deg) saturate(0.8);
-            background-color: rgba(15, 23, 42, 1) !important;
-          }
-          .tradingview-widget-container__chart {
-            background-color: rgba(15, 23, 42, 1) !important;
-          }
-        ` : ""}
-      `}</style>
-      <div className="tradingview-widget-container__chart" ref={container}></div>
     </div>
   )
 }

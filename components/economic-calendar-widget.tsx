@@ -42,7 +42,7 @@ const TEXT = {
   },
 }
 
-function buildAssistantResponse(locale: "en" | "ar", prompt: string): string {
+function buildFallbackResponse(locale: "en" | "ar", prompt: string): string {
   const lower = prompt.toLowerCase()
 
   if (lower.includes("cpi") || lower.includes("inflation") || lower.includes("معدل")) {
@@ -78,6 +78,54 @@ function buildAssistantResponse(locale: "en" | "ar", prompt: string): string {
   return locale === "ar"
     ? "اطرح أي سؤال حول حدث اقتصادي، دولة معينة، أو تأثير محتمل على العملات والسلع وسأقدم لك تلخيصاً فورياً."
     : "Feel free to ask about any economic release, currency, or asset-class impact and I'll surface a concise take within a couple of seconds."
+}
+
+type InsightItem = {
+  title: string
+  time: string
+  country: string
+  impact: string
+  actual?: string | null
+  forecast?: string | null
+  previous?: string | null
+}
+
+type InsightResponse = {
+  summary: string
+  items: InsightItem[]
+}
+
+function formatInsightMessage(locale: "en" | "ar", payload: InsightResponse): string {
+  const header =
+    locale === "ar"
+      ? `ملخص سريع: ${payload.summary}`
+      : `Quick take: ${payload.summary}`
+
+  if (!payload.items.length) {
+    return header
+  }
+
+  const lines = payload.items.map((item) => {
+    const baseLine =
+      locale === "ar"
+        ? `• ${item.time} — ${item.country} · ${item.title} (${item.impact})`
+        : `• ${item.time} — ${item.country} · ${item.title} (${item.impact})`
+
+    const stats: string[] = []
+    if (item.actual) {
+      stats.push(locale === "ar" ? `الفعلي: ${item.actual}` : `Actual: ${item.actual}`)
+    }
+    if (item.forecast) {
+      stats.push(locale === "ar" ? `المتوقع: ${item.forecast}` : `Forecast: ${item.forecast}`)
+    }
+    if (item.previous) {
+      stats.push(locale === "ar" ? `السابق: ${item.previous}` : `Previous: ${item.previous}`)
+    }
+
+    return stats.length ? `${baseLine}\n   ${stats.join(" · ")}` : baseLine
+  })
+
+  return [header, "", ...lines].join("\n")
 }
 
 function EconomicCalendarWidgetComponent() {
@@ -216,7 +264,7 @@ function EconomicCalendarWidgetComponent() {
 
   const assistantDelay = useMemo(() => (language === "ar" ? 900 : 750), [language])
 
-  const handleChatSubmit = (event?: React.FormEvent) => {
+  const handleChatSubmit = async (event?: React.FormEvent) => {
     event?.preventDefault()
     if (!chatInput.trim() || chatLoading) return
 
@@ -231,15 +279,44 @@ function EconomicCalendarWidgetComponent() {
     setChatInput("")
     setChatLoading(true)
 
-    window.setTimeout(() => {
-      const response: ChatMessage = {
-        id: `${Date.now()}-assistant`,
-        role: "assistant",
-        content: buildAssistantResponse(language, userContent),
+    try {
+      const response = await fetch("/api/calendar/insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userContent, locale: language }),
+      })
+
+      const payload = await response.json()
+      if (!response.ok) {
+        throw new Error(payload?.error || "Insight fetch failed")
       }
-      setMessages((prev) => [...prev, response])
-      setChatLoading(false)
-    }, assistantDelay + Math.random() * 400)
+
+      const formatted = formatInsightMessage(language, payload as InsightResponse)
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-assistant`,
+            role: "assistant",
+            content: formatted,
+          },
+        ])
+        setChatLoading(false)
+      }, assistantDelay)
+    } catch (error) {
+      console.error("[CalendarChat] insight request failed", error)
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}-assistant`,
+            role: "assistant",
+            content: buildFallbackResponse(language, userContent),
+          },
+        ])
+        setChatLoading(false)
+      }, assistantDelay)
+    }
   }
 
   return (
@@ -255,12 +332,12 @@ function EconomicCalendarWidgetComponent() {
         </div>
       </div>
 
-      {!isReady && (
-        <div className="calendar-loading">
-          <div className="loading-spinner" />
-          <p>{TEXT.loading[language]}</p>
-        </div>
-      )}
+        {!isReady && (
+          <div className="calendar-loading">
+            <div className="loading-spinner" />
+            <p>{TEXT.loading[language]}</p>
+          </div>
+        )}
 
         <div className="calendar-inner" data-ready={isReady}>
           <div ref={containerRef} className="calendar-inner__host" />
@@ -270,7 +347,18 @@ function EconomicCalendarWidgetComponent() {
               {language === "ar" ? "عرض للقراءة فقط" : "Display only"}
             </span>
           </div>
-          <div className="calendar-inner__brand-guard" aria-hidden="true" />
+          <div
+            className="calendar-inner__brand-guard"
+            aria-hidden="true"
+            onPointerDown={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+            onClick={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+            }}
+          />
         </div>
 
       <div className="bottom-blocker" aria-hidden="true">
@@ -515,21 +603,21 @@ function EconomicCalendarWidgetComponent() {
           z-index: 1;
         }
 
-        .calendar-inner__brand-guard {
-          position: absolute;
-          inset-inline: 0;
-          bottom: 0;
-          height: 48px;
-          z-index: 6;
-          pointer-events: auto;
-          background: linear-gradient(
-            to top,
-            rgba(249, 251, 247, 0.96) 0%,
-            rgba(241, 248, 243, 0.35) 60%,
-            rgba(241, 248, 243, 0) 100%
-          );
-          cursor: default;
-        }
+          .calendar-inner__brand-guard {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            height: 32px;
+            z-index: 6;
+            pointer-events: auto;
+            cursor: not-allowed;
+            background: linear-gradient(
+              to top,
+              rgba(249, 251, 247, 0.96) 0%,
+              rgba(241, 248, 243, 0.35) 60%,
+              rgba(241, 248, 243, 0) 100%
+            );
+          }
 
         [data-theme="dark"] .calendar-inner__brand-guard,
         .dark .calendar-inner__brand-guard {
@@ -589,25 +677,24 @@ function EconomicCalendarWidgetComponent() {
           mix-blend-mode: normal;
         }
 
-        .calendar-inner__footer {
-          position: absolute;
-          inset-inline: 0;
-          bottom: 0;
-          height: 90px;
-          z-index: 4;
-          pointer-events: auto;
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          cursor: not-allowed;
-          background: linear-gradient(
-            to top,
-            rgba(255, 255, 255, 0.95) 0%,
-            rgba(255, 255, 255, 0.88) 55%,
-            rgba(255, 255, 255, 0.48) 85%,
-            rgba(255, 255, 255, 0) 100%
-          );
-        }
+          .calendar-inner__footer {
+            position: absolute;
+            inset-inline: 0;
+            bottom: 0;
+            height: 70px;
+            z-index: 4;
+            pointer-events: none;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            background: linear-gradient(
+              to top,
+              rgba(255, 255, 255, 0.95) 0%,
+              rgba(255, 255, 255, 0.88) 55%,
+              rgba(255, 255, 255, 0.48) 85%,
+              rgba(255, 255, 255, 0) 100%
+            );
+          }
 
         [data-theme="dark"] .calendar-inner__footer,
         .dark .calendar-inner__footer {
@@ -643,36 +730,20 @@ function EconomicCalendarWidgetComponent() {
           border-color: rgba(117, 204, 158, 0.45);
         }
 
-        .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
-          opacity: 1;
-          transform: translateY(0);
-        }
+          .calendar-inner[data-ready="true"] .calendar-inner__footer-label {
+            opacity: 1;
+            transform: translateY(0);
+          }
 
-        /* Mask all branding, links, and copyright */
-        .calendar-wrapper [class*="copyright"],
-        .calendar-wrapper [class*="brand"],
-        .calendar-wrapper [class*="logo"],
-        .calendar-wrapper [class*="footer"],
-        .calendar-wrapper [class*="trademark"],
-        .calendar-wrapper [href*="mql5"],
-        .calendar-wrapper [href*="tradays"],
-        .calendar-wrapper [id*="copyright"],
-        .calendar-wrapper [id*="brand"],
-        .calendar-wrapper a[href*="mql5.com"],
-        .calendar-wrapper a[href*="tradays.com"],
-        .calendar-wrapper a[href*="calendar.widget"] {
-          display: none !important;
-          visibility: hidden !important;
-          opacity: 0 !important;
-          position: absolute !important;
-          left: -9999px !important;
-          pointer-events: none !important;
-          height: 0 !important;
-          width: 0 !important;
-          overflow: hidden !important;
-          font-size: 0 !important;
-          line-height: 0 !important;
-        }
+          /* Gently suppress provider branding without breaking interactions */
+          .calendar-wrapper a[href*="mql5.com"],
+          .calendar-wrapper a[href*="tradays.com"],
+          .calendar-wrapper a[href*="calendar.widget"],
+          .calendar-wrapper [class*="copyright"],
+          .calendar-wrapper [id*="copyright"] {
+            opacity: 0 !important;
+            pointer-events: none !important;
+          }
         
         /* Mask bottom corners where links might appear */
         .calendar-inner__host::after {
@@ -710,25 +781,25 @@ function EconomicCalendarWidgetComponent() {
           overflow-x: hidden !important;
         }
 
-        .bottom-blocker {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 122px;
-          background: linear-gradient(
-            to top,
-            rgba(249, 251, 247, 0.98) 0%,
-            rgba(236, 244, 238, 0.82) 55%,
-            rgba(236, 244, 238, 0.35) 85%,
-            rgba(236, 244, 238, 0) 100%
-          );
-          z-index: 15;
-          display: flex;
-          justify-content: center;
-          align-items: flex-end;
-          pointer-events: none;
-        }
+          .bottom-blocker {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 80px;
+            background: linear-gradient(
+              to top,
+              rgba(249, 251, 247, 0.98) 0%,
+              rgba(236, 244, 238, 0.82) 55%,
+              rgba(236, 244, 238, 0.35) 85%,
+              rgba(236, 244, 238, 0) 100%
+            );
+            z-index: 15;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            pointer-events: none;
+          }
 
         [data-theme="dark"] .bottom-blocker,
         .dark .bottom-blocker {
@@ -1045,7 +1116,7 @@ function EconomicCalendarWidgetComponent() {
             height: 760px !important;
           }
           .calendar-inner__footer {
-            height: 88px;
+            height: 64px;
           }
         }
 
@@ -1078,9 +1149,9 @@ function EconomicCalendarWidgetComponent() {
             inset-inline: 18px;
           }
 
-          .calendar-inner__footer {
-            height: 82px;
-          }
+            .calendar-inner__footer {
+              height: 58px;
+            }
         }
 
         @media (max-width: 576px) {
@@ -1111,9 +1182,9 @@ function EconomicCalendarWidgetComponent() {
             max-height: 400px;
           }
 
-          .calendar-inner__footer {
-            height: 76px;
-          }
+            .calendar-inner__footer {
+              height: 54px;
+            }
         }
 
         @media (max-width: 430px) {
@@ -1144,9 +1215,9 @@ function EconomicCalendarWidgetComponent() {
             height: 620px !important;
           }
 
-          .calendar-inner__footer {
-            height: 70px;
-          }
+            .calendar-inner__footer {
+              height: 50px;
+            }
         }
       `}</style>
     </div>

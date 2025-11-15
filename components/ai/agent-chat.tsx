@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/contexts/auth-context"
-import { createClientSupabase } from "@/lib/supabase-client"
 
 type UiMessage = {
   id: string
@@ -34,13 +33,18 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   ref,
 ) {
   const { session } = useAuth()
-  const supabase = createClientSupabase()
   const [messages, setMessages] = useState<UiMessage[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "Marḥabā! Ask me for live FX, bullion moves, or quick technical checks. I can fetch FMP prices, generate trade signals, and summarize market headlines for you.",
+        "Marḥabā! I’m wired directly into Liirat’s premium FMP feed, so you can ask me for live prices, spreads, FX levels, and trading signals at any time.",
+    },
+    {
+      id: "helper",
+      role: "assistant",
+      content:
+        "Send something like “BTCUSD 4h signal”, “USD/TRY now?”, or “Gold breakout view?” and I’ll fetch the data for you.",
     },
   ])
   const [input, setInput] = useState("")
@@ -48,7 +52,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   const [toolEvents, setToolEvents] = useState<ToolInvocation[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const userCanChat = Boolean(session?.access_token)
+  const isAuthenticated = Boolean(session?.access_token)
 
   useImperativeHandle(ref, () => ({
     sendPrompt(prompt: string) {
@@ -78,17 +82,6 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   const submitMessage = async (text: string) => {
     const trimmed = text.trim()
     if (!trimmed || status === "thinking") return
-    if (!userCanChat) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          content: "Please sign in to chat with the Liirat agent.",
-        },
-      ])
-      return
-    }
 
     const userMessage: UiMessage = { id: crypto.randomUUID(), role: "user", content: trimmed }
     const optimistic = [...messages, userMessage]
@@ -98,7 +91,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
 
     try {
       const headers: HeadersInit = { "Content-Type": "application/json" }
-      if (session?.access_token) {
+      if (isAuthenticated && session?.access_token) {
         headers["Authorization"] = `Bearer ${session.access_token}`
       }
 
@@ -159,7 +152,7 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
   return (
     <div
       className={cn(
-        "flex h-full flex-col rounded-[32px] border border-emerald-100/70 bg-white/95 shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border-emerald-500/20 dark:bg-[#09110c]/95 dark:shadow-[0_36px_110px_rgba(5,10,7,0.85)]",
+        "flex h-full min-h-0 flex-col rounded-[32px] border border-emerald-100/70 bg-white/95 shadow-[0_30px_80px_rgba(15,23,42,0.12)] dark:border-emerald-500/20 dark:bg-[#09110c]/95 dark:shadow-[0_36px_110px_rgba(5,10,7,0.85)]",
         className,
       )}
     >
@@ -239,14 +232,14 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
           <Input
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder={userCanChat ? "Ask for live FX, signals, or news…" : "Sign in to chat"}
+            placeholder="Ask for live FX, signals, or news…"
             className="flex-1 border-none bg-transparent p-0 text-sm focus-visible:ring-0"
-            disabled={!userCanChat || status === "thinking"}
+            disabled={status === "thinking"}
           />
           <Button
             type="submit"
             size="icon"
-            disabled={!userCanChat || status === "thinking" || !input.trim()}
+            disabled={status === "thinking" || !input.trim()}
             className="rounded-full"
           >
             <SendHorizontal className="h-4 w-4" />
