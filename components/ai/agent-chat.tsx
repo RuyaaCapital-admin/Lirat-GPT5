@@ -38,7 +38,13 @@ export const AgentChat = forwardRef<AgentChatHandle, AgentChatProps>(function Ag
       id: "welcome",
       role: "assistant",
       content:
-        "Marḥabā! Ask me for live FX, bullion moves, or quick technical checks. I can fetch FMP prices, generate trade signals, and summarize market headlines for you.",
+        "Marḥabā! I’m wired directly into Liirat’s premium FMP feed, so you can ask me for live prices, spreads, FX levels, and trading signals at any time.",
+    },
+    {
+      id: "helper",
+      role: "assistant",
+      content:
+        "Send something like “BTCUSD 4h signal”, “USD/TRY now?”, or “Gold breakout view?” and I’ll fetch the data for you.",
     },
   ])
   const [input, setInput] = useState("")
